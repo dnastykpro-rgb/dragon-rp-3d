@@ -2,36 +2,100 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>RADMIR WEB RP</title>
+    <title>RADMIR WEBGL RP — Launcher</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
-        body { overflow: hidden; background: #0f172a; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; }
+        body { overflow: hidden; background: #090d16; }
         canvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
         canvas:active { cursor: grabbing; }
 
-        #menu-overlay {
-            position: fixed; inset: 0; background: rgba(10, 14, 24, 0.88);
-            backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 100;
+        /* Полноэкранный современный лаунчер */
+        #launcher-screen {
+            position: fixed; inset: 0; z-index: 100;
+            background: radial-gradient(circle at 75% 25%, #2e1065 0%, #0f172a 48%, #060913 100%);
+            display: flex; flex-direction: column; justify-content: space-between; padding: 36px;
+            transition: opacity 0.6s ease, transform 0.6s ease;
         }
-        .menu-box {
-            background: #181c2a; border: 1px solid rgba(168, 85, 247, 0.4);
-            border-radius: 24px; padding: 36px; width: 390px; text-align: center; color: white;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.8);
-        }
-        .menu-box h1 { font-size: 28px; margin-bottom: 6px; color: #c084fc; }
-        .menu-box p { font-size: 14px; color: #94a3b8; margin-bottom: 22px; }
-        .menu-box input, .menu-box select {
-            width: 100%; padding: 13px 16px; margin-bottom: 14px; border-radius: 14px;
-            border: 1px solid #334155; background: #1e293b; color: white; font-size: 15px; outline: none;
-        }
-        .menu-box button {
-            width: 100%; padding: 14px; border-radius: 14px; border: none;
-            background: linear-gradient(135deg, #9333ea, #6366f1); color: white;
-            font-size: 16px; font-weight: bold; cursor: pointer;
-        }
-        .menu-box button:hover { filter: brightness(1.15); }
-        #menu-error { color: #f87171; font-size: 13px; margin-bottom: 10px; min-height: 18px; }
+        #launcher-screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.03); }
 
+        /* Верхний левый угол: Никнейм */
+        .top-left-nick {
+            position: absolute; top: 32px; left: 32px;
+            background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 18px;
+            padding: 14px 20px; width: 310px; box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+        }
+        .top-left-nick label {
+            display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: #c084fc; font-weight: 700; margin-bottom: 6px;
+        }
+        .top-left-nick input {
+            width: 100%; background: rgba(30, 41, 59, 0.9); border: 1px solid #334155;
+            border-radius: 10px; padding: 10px 14px; color: white; font-size: 15px; font-weight: 600; outline: none;
+            transition: border-color 0.2s;
+        }
+        .top-left-nick input:focus { border-color: #a855f7; }
+        #nick-error { color: #f87171; font-size: 12px; margin-top: 6px; min-height: 16px; }
+
+        /* Центральный баннер лаунчера */
+        .launcher-center {
+            margin: auto; text-align: center; pointer-events: none;
+        }
+        .launcher-center h1 {
+            font-size: 54px; font-weight: 900; letter-spacing: 2px;
+            background: linear-gradient(135deg, #ffffff 0%, #c084fc 50%, #6366f1 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 40px rgba(168, 85, 247, 0.3);
+        }
+        .launcher-center p { color: #94a3b8; font-size: 16px; margin-top: 8px; }
+
+        /* Правый нижний угол: Выбор сервера + Кнопка Играть */
+        .bottom-right-controls {
+            position: absolute; bottom: 32px; right: 32px;
+            display: flex; align-items: center; gap: 14px;
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px);
+            padding: 14px 18px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+        .bottom-right-controls select {
+            background: #1e293b; color: white; border: 1px solid #334155;
+            padding: 15px 18px; border-radius: 14px; font-size: 15px; font-weight: 600;
+            outline: none; cursor: pointer; min-width: 240px;
+        }
+        .bottom-right-controls button {
+            background: linear-gradient(135deg, #9333ea 0%, #4f46e5 100%);
+            color: white; border: none; padding: 15px 38px; border-radius: 14px;
+            font-size: 17px; font-weight: 800; letter-spacing: 1px; cursor: pointer;
+            box-shadow: 0 8px 25px rgba(147, 51, 234, 0.45); transition: all 0.2s ease;
+        }
+        .bottom-right-controls button:hover {
+            transform: translateY(-2px); box-shadow: 0 12px 30px rgba(147, 51, 234, 0.65); filter: brightness(1.1);
+        }
+
+        /* Современный экран загрузки */
+        #loading-screen {
+            position: fixed; inset: 0; z-index: 150; background: #070a12;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.45s ease;
+        }
+        #loading-screen.active { opacity: 1; pointer-events: auto; }
+        .spinner-ring {
+            width: 68px; height: 68px; border-radius: 50%;
+            border: 4px solid rgba(168, 85, 247, 0.15); border-top-color: #a855f7; border-right-color: #6366f1;
+            animation: spin 0.9s linear infinite; margin-bottom: 24px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-title { color: white; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+        #loading-status { color: #94a3b8; font-size: 14px; margin-bottom: 22px; }
+        .progress-track {
+            width: 360px; height: 8px; background: #1e293b; border-radius: 99px; overflow: hidden;
+        }
+        #progress-fill {
+            width: 0%; height: 100%; background: linear-gradient(90deg, #a855f7, #38bdf8);
+            border-radius: 99px; transition: width 0.15s ease-out;
+        }
+
+        /* Игровой интерфейс (HUD) */
         #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
         #chat-container { position: absolute; top: 20px; left: 20px; width: 430px; pointer-events: auto; }
         #chat-messages {
@@ -58,20 +122,43 @@
 </head>
 <body>
 
-    <div id="menu-overlay">
-        <div class="menu-box">
+    <!-- Полноэкранный лаунчер -->
+    <div id="launcher-screen">
+        <!-- Верхний левый угол: Ник -->
+        <div class="top-left-nick">
+            <label for="nick-input">Ваш игровой ник</label>
+            <input type="text" id="nick-input" placeholder="Например: Domik_Brane" maxlength="20">
+            <div id="nick-error"></div>
+        </div>
+
+        <!-- Центр: Логотип -->
+        <div class="launcher-center">
             <h1>RADMIR WEB RP</h1>
-            <p>Выбери сервер и начни игру в 3D городе</p>
-            <input type="text" id="nick-input" placeholder="Ник (например, Domik_Brane)" maxlength="20">
+            <p>Официальный веб-лаунчер • 3D WebGL Engine</p>
+        </div>
+
+        <!-- Правый нижний угол: Выбор сервера и кнопка Играть -->
+        <div class="bottom-right-controls">
             <select id="server-select">
-                <option value="Server #01 | Арзамас">Server #01 | Арзамас</option>
-                <option value="Server #02 | Южный">Server #02 | Южный</option>
+                <option value="Server #01 | Арзамас">Server #01 | Арзамас (Онлайн: 418)</option>
+                <option value="Server #02 | Южный">Server #02 | Южный (Онлайн: 295)</option>
+                <option value="Server #03 | Dev Test">Server #03 | Dev Test (Онлайн: 12)</option>
             </select>
-            <div id="menu-error"></div>
-            <button onclick="startGame()">ПОДКЛЮЧИТЬСЯ</button>
+            <button onclick="launchGame()">ИГРАТЬ</button>
         </div>
     </div>
 
+    <!-- Экран современной загрузки -->
+    <div id="loading-screen">
+        <div class="spinner-ring"></div>
+        <div class="loading-title" id="loading-server-name">Подключение к серверу...</div>
+        <div id="loading-status">Инициализация 3D-движка WebGL...</div>
+        <div class="progress-track">
+            <div id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Игровой HUD -->
     <div id="hud">
         <div id="server-info">
             <div id="server-badge">Server #01 | Арзамас</div>
@@ -83,143 +170,214 @@
             <input type="text" id="chat-input" placeholder="Сообщение или команды: /me, /do, /n, /gps...">
         </div>
         <div id="controls-hint">
-            <b>WASD</b> — Ходьба / Езда | <b>Shift</b> — Бег<br>
+            <b>WASD</b> — Ходьба / Езда | <b>Shift</b> — Бег | <b>Пробел</b> — Прыжок<br>
             <b>F</b> — Сесть / Выйти из машины | <b>T</b> — Чат | <b>Мышь</b> — Вращать камеру
         </div>
     </div>
 
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="glCanvas"></canvas>
+
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl');
         let W, H;
-        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            gl.viewport(0, 0, W, H);
+        }
         window.addEventListener('resize', resize);
         resize();
 
-        function makeTexture(baseColor, detailColor, type) {
+        const vsSrc = `
+            attribute vec3 aPos;
+            attribute vec3 aNorm;
+            attribute vec2 aUV;
+            uniform mat4 uProj;
+            uniform mat4 uView;
+            uniform mat4 uModel;
+            uniform vec2 uUVScale;
+            varying vec3 vNorm;
+            varying vec2 vUV;
+            varying float vDist;
+            void main() {
+                vec4 worldPos = uModel * vec4(aPos, 1.0);
+                vec4 viewPos = uView * worldPos;
+                gl_Position = uProj * viewPos;
+                vNorm = mat3(uModel) * aNorm;
+                vUV = aUV * uUVScale;
+                vDist = -viewPos.z;
+            }
+        `;
+        const fsSrc = `
+            precision mediump float;
+            varying vec3 vNorm;
+            varying vec2 vUV;
+            varying float vDist;
+            uniform sampler2D uTex;
+            uniform vec3 uTint;
+            void main() {
+                vec3 sunDir = normalize(vec3(0.5, 0.85, 0.4));
+                float light = max(dot(normalize(vNorm), sunDir), 0.0) * 0.65 + 0.45;
+                vec4 texCol = texture2D(uTex, vUV);
+                vec3 col = texCol.rgb * uTint * light;
+                float fog = clamp((vDist - 55.0) / 150.0, 0.0, 1.0);
+                col = mix(col, vec3(0.53, 0.81, 0.98), fog);
+                gl_FragColor = vec4(col, 1.0);
+            }
+        `;
+
+        function compileShader(type, src) {
+            const s = gl.createShader(type);
+            gl.shaderSource(s, src);
+            gl.compileShader(s);
+            return s;
+        }
+        const prog = gl.createProgram();
+        gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSrc));
+        gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSrc));
+        gl.linkProgram(prog);
+        gl.useProgram(prog);
+        gl.enable(gl.DEPTH_TEST);
+        function createGLTexture(type) {
             const c = document.createElement('canvas');
-            c.width = 64; c.height = 64;
+            c.width = 128; c.height = 128;
             const g = c.getContext('2d');
-            g.fillStyle = baseColor;
-            g.fillRect(0, 0, 64, 64);
 
             if (type === 'asphalt') {
-                for (let i = 0; i < 180; i++) {
-                    g.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.25)';
-                    g.fillRect(Math.random() * 64, Math.random() * 64, 2, 2);
+                g.fillStyle = '#262b34'; g.fillRect(0, 0, 128, 128);
+                for (let i = 0; i < 600; i++) {
+                    g.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.3)';
+                    g.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
                 }
-            } else if (type === 'brick') {
-                g.fillStyle = detailColor;
-                for (let y = 0; y < 64; y += 16) {
-                    g.fillRect(0, y, 64, 2);
-                    let offset = (y / 16) % 2 === 0 ? 0 : 16;
-                    for (let x = offset; x < 64; x += 32) g.fillRect(x, y, 2, 16);
+            } else if (type === 'grass') {
+                g.fillStyle = '#3b6625'; g.fillRect(0, 0, 128, 128);
+                for (let i = 0; i < 500; i++) {
+                    g.fillStyle = i % 2 === 0 ? '#4a7c31' : '#2d4f1c';
+                    g.fillRect(Math.random() * 128, Math.random() * 128, 3, 3);
                 }
             } else if (type === 'windows') {
-                g.fillStyle = detailColor;
-                g.fillRect(8, 8, 18, 20);
-                g.fillRect(38, 8, 18, 20);
-                g.fillRect(8, 36, 18, 20);
-                g.fillRect(38, 36, 18, 20);
-                g.fillStyle = 'rgba(255,255,255,0.25)';
-                g.fillRect(10, 10, 6, 16);
-                g.fillRect(40, 10, 6, 16);
-            } else if (type === 'zombie') {
-                g.fillStyle = detailColor;
-                g.fillRect(0, 12, 64, 8);
-                g.fillRect(15, 0, 10, 64);
-                g.fillStyle = 'rgba(0,0,0,0.2)';
-                g.fillRect(5, 35, 22, 14);
+                g.fillStyle = '#cbd5e1'; g.fillRect(0, 0, 128, 128);
+                g.fillStyle = '#0f172a';
+                for (let y = 12; y < 116; y += 38) {
+                    for (let x = 12; x < 116; x += 38) {
+                        g.fillRect(x, y, 24, 26);
+                        g.fillStyle = '#38bdf8';
+                        g.fillRect(x + 2, y + 2, 8, 22);
+                        g.fillStyle = '#0f172a';
+                    }
+                }
+            } else if (type === 'brick') {
+                g.fillStyle = '#991b1b'; g.fillRect(0, 0, 128, 128);
+                g.fillStyle = '#7f1d1d';
+                for (let y = 0; y < 128; y += 16) {
+                    g.fillRect(0, y, 128, 2);
+                    for (let x = (y / 16) % 2 * 16; x < 128; x += 32) g.fillRect(x, y, 2, 16);
+                }
+            } else {
+                g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 128);
             }
-            return ctx.createPattern(c, 'repeat');
+
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            return tex;
         }
 
-        const texAsphalt = makeTexture('#1e293b', '#334155', 'asphalt');
-        const texKremlin = makeTexture('#991b1b', '#7f1d1d', 'brick');
-        const texHouse1 = makeTexture('#cbd5e1', '#1e3a8a', 'windows');
-        const texHouse2 = makeTexture('#fde68a', '#0f172a', 'windows');
-        const texSalon = makeTexture('#0284c7', '#bae6fd', 'windows');
-        const texZombieClothes = makeTexture('#1d4ed8', '#172554', 'zombie');
+        const textures = {
+            asphalt: createGLTexture('asphalt'),
+            grass: createGLTexture('grass'),
+            windows: createGLTexture('windows'),
+            brick: createGLTexture('brick'),
+            white: createGLTexture('white')
+        };
+
+        const boxVerts = new Float32Array([
+            -0.5,-0.5, 0.5,  0, 0, 1,  0,1,   0.5,-0.5, 0.5,  0, 0, 1,  1,1,   0.5, 0.5, 0.5,  0, 0, 1,  1,0,
+            -0.5,-0.5, 0.5,  0, 0, 1,  0,1,   0.5, 0.5, 0.5,  0, 0, 1,  1,0,  -0.5, 0.5, 0.5,  0, 0, 1,  0,0,
+             0.5,-0.5,-0.5,  0, 0,-1,  0,1,  -0.5,-0.5,-0.5,  0, 0,-1,  1,1,  -0.5, 0.5,-0.5,  0, 0,-1,  1,0,
+             0.5,-0.5,-0.5,  0, 0,-1,  0,1,  -0.5, 0.5,-0.5,  0, 0,-1,  1,0,   0.5, 0.5,-0.5,  0, 0,-1,  0,0,
+            -0.5, 0.5, 0.5,  0, 1, 0,  0,1,   0.5, 0.5, 0.5,  0, 1, 0,  1,1,   0.5, 0.5,-0.5,  0, 1, 0,  1,0,
+            -0.5, 0.5, 0.5,  0, 1, 0,  0,1,   0.5, 0.5,-0.5,  0, 1, 0,  1,0,  -0.5, 0.5,-0.5,  0, 1, 0,  0,0,
+            -0.5,-0.5,-0.5,  0,-1, 0,  0,1,   0.5,-0.5,-0.5,  0,-1, 0,  1,1,   0.5,-0.5, 0.5,  0,-1, 0,  1,0,
+            -0.5,-0.5,-0.5,  0,-1, 0,  0,1,   0.5,-0.5, 0.5,  0,-1, 0,  1,0,  -0.5,-0.5, 0.5,  0,-1, 0,  0,0,
+             0.5,-0.5, 0.5,  1, 0, 0,  0,1,   0.5,-0.5,-0.5,  1, 0, 0,  1,1,   0.5, 0.5,-0.5,  1, 0, 0,  1,0,
+             0.5,-0.5, 0.5,  1, 0, 0,  0,1,   0.5, 0.5,-0.5,  1, 0, 0,  1,0,   0.5, 0.5, 0.5,  1, 0, 0,  0,0,
+            -0.5,-0.5,-0.5, -1, 0, 0,  0,1,  -0.5,-0.5, 0.5, -1, 0, 0,  1,1,  -0.5, 0.5, 0.5, -1, 0, 0,  1,0,
+            -0.5,-0.5,-0.5, -1, 0, 0,  0,1,  -0.5, 0.5, 0.5, -1, 0, 0,  1,0,  -0.5, 0.5,-0.5, -1, 0, 0,  0,0
+        ]);
+
+        const vbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, boxVerts, gl.STATIC_DRAW);
+
+        const aPos = gl.getAttribLocation(prog, 'aPos');
+        const aNorm = gl.getAttribLocation(prog, 'aNorm');
+        const aUV = gl.getAttribLocation(prog, 'aUV');
+        gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0);
+        gl.enableVertexAttribArray(aNorm); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12);
+        gl.enableVertexAttribArray(aUV); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+        const uProj = gl.getUniformLocation(prog, 'uProj');
+        const uView = gl.getUniformLocation(prog, 'uView');
+        const uModel = gl.getUniformLocation(prog, 'uModel');
+        const uUVScale = gl.getUniformLocation(prog, 'uUVScale');
+        const uTint = gl.getUniformLocation(prog, 'uTint');
+
+        function draw3DBox(x, y, z, sx, sy, sz, rotY, tex, r, g, b, uvX = 1, uvY = 1) {
+            const c = Math.cos(rotY), s = Math.sin(rotY);
+            const m = new Float32Array([
+                sx * c, 0, -sx * s, 0,
+                0, sy, 0, 0,
+                sz * s, 0, sz * c, 0,
+                x, y, z, 1
+            ]);
+            gl.uniformMatrix4fv(uModel, false, m);
+            gl.uniform2f(uUVScale, uvX, uvY);
+            gl.uniform3f(uTint, r, g, b);
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.drawArrays(gl.TRIANGLES, 0, 36);
+        }
+
+        function setCamera(eyeX, eyeY, eyeZ, targetX, targetY, targetZ) {
+            const aspect = W / H, fov = 1.05, near = 0.2, far = 300;
+            const f = 1.0 / Math.tan(fov / 2);
+            gl.uniformMatrix4fv(uProj, false, new Float32Array([
+                f / aspect, 0, 0, 0,
+                0, f, 0, 0,
+                0, 0, (far + near) / (near - far), -1,
+                0, 0, (2 * far * near) / (near - far), 0
+            ]));
+
+            let zx = eyeX - targetX, zy = eyeY - targetY, zz = eyeZ - targetZ;
+            let zl = Math.hypot(zx, zy, zz); zx /= zl; zy /= zl; zz /= zl;
+            let xx = zz, xy = 0, xz = -zx;
+            let xl = Math.hypot(xx, xz) || 1; xx /= xl; xz /= xl;
+            let yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+
+            gl.uniformMatrix4fv(uView, false, new Float32Array([
+                xx, yx, zx, 0,
+                xy, yy, zy, 0,
+                xz, yz, zz, 0,
+                -(xx * eyeX + xy * eyeY + xz * eyeZ),
+                -(yx * eyeX + yy * eyeY + yz * eyeZ),
+                -(zx * eyeX + zy * eyeY + zz * eyeZ), 1
+            ]));
+        }
 
         let playerNick = "Domik_Brane";
         let isGameStarted = false;
         let isChatOpen = false;
         let camYaw = 0;
-        let camPitch = 0.28;
+        let camPitch = 0.35;
 
-        const player = { x: -4, z: 10, angle: 0, walkTime: 0 };
+        const player = { x: -4, y: 0, z: 12, vy: 0, angle: 0, walkTime: 0 };
         const cars = [
-            { x: 3.5, z: 10, angle: 0, speed: 0, color: '#18181b', roof: '#3f3f46', name: 'BMW M5 F90' },
-            { x: -16, z: -12, angle: 0.5, speed: 0, color: '#9333ea', roof: '#c084fc', name: 'Nissan GT-R' }
+            { x: 3.5, z: 12, angle: 0, speed: 0, r: 0.12, g: 0.13, b: 0.16, name: 'BMW M5 F90' },
+            { x: -16, z: -12, angle: 0.5, speed: 0, r: 0.58, g: 0.2, b: 0.92, name: 'Nissan GT-R' }
         ];
         let currentCar = null;
-
-        const buildings = [
-            { x: 26, z: -25, w: 28, d: 14, h: 11, side: texKremlin, top: '#7f1d1d' },
-            { x: 12, z: -25, w: 6, d: 6, h: 22, side: texKremlin, top: '#14532d' },
-            { x: -26, z: -22, w: 24, d: 18, h: 9, side: texSalon, top: '#0369a1' },
-            { x: 12, z: 42, w: 5, d: 5, h: 4, side: '#f8fafc', top: '#2563eb' },
-            { x: -25, z: 24, w: 14, d: 14, h: 18, side: texHouse1, top: '#64748b' },
-            { x: -25, z: 52, w: 14, d: 14, h: 25, side: texHouse2, top: '#d97706' },
-            { x: 26, z: 26, w: 14, d: 14, h: 20, side: texHouse1, top: '#475569' }
-        ];
-
-        const trees = [];
-        for (let z = -75; z <= 75; z += 18) {
-            if (Math.abs(z) >= 12) {
-                trees.push({ x: -11, z: z }, { x: 11, z: z });
-            }
-        }
-        function project(x, y, z, camX, camY, camZ) {
-            let dx = x - camX, dy = y - camY, dz = z - camZ;
-            let cosY = Math.cos(-camYaw), sinY = Math.sin(-camYaw);
-            let rx = dx * cosY - dz * sinY;
-            let rz = dx * sinY + dz * cosY;
-
-            let cosP = Math.cos(-camPitch), sinP = Math.sin(-camPitch);
-            let ry = dy * cosP - rz * sinP;
-            let fz = dy * sinP + rz * cosP;
-
-            if (fz < 0.4) return null;
-            let fov = H * 0.9;
-            return { x: W / 2 + (rx / fz) * fov, y: H / 2 - (ry / fz) * fov, z: fz };
-        }
-
-        function drawBox(cx, cy, cz, w, h, d, angle, fillSide, fillTop, camX, camY, camZ) {
-            let hw = w / 2, hd = d / 2;
-            let cos = Math.cos(angle), sin = Math.sin(angle);
-            let p0 = project(-hw * cos - (-hd) * sin + cx, cy, -hw * sin + (-hd) * cos + cz, camX, camY, camZ);
-            let p1 = project(hw * cos - (-hd) * sin + cx, cy, hw * sin + (-hd) * cos + cz, camX, camY, camZ);
-            let p2 = project(hw * cos - hd * sin + cx, cy, hw * sin + hd * cos + cz, camX, camY, camZ);
-            let p3 = project(-hw * cos - hd * sin + cx, cy, -hw * sin + hd * cos + cz, camX, camY, camZ);
-            let p4 = project(-hw * cos - (-hd) * sin + cx, cy + h, -hw * sin + (-hd) * cos + cz, camX, camY, camZ);
-            let p5 = project(hw * cos - (-hd) * sin + cx, cy + h, hw * sin + (-hd) * cos + cz, camX, camY, camZ);
-            let p6 = project(hw * cos - hd * sin + cx, cy + h, hw * sin + hd * cos + cz, camX, camY, camZ);
-            let p7 = project(-hw * cos - hd * sin + cx, cy + h, -hw * sin + hd * cos + cz, camX, camY, camZ);
-
-            if (!p0 || !p1 || !p2 || !p3 || !p4 || !p5 || !p6 || !p7) return;
-
-            function quad(a, b, c, d, style) {
-                ctx.beginPath();
-                ctx.moveTo(a.x, a.y);
-                ctx.lineTo(b.x, b.y);
-                ctx.lineTo(c.x, c.y);
-                ctx.lineTo(d.x, d.y);
-                ctx.closePath();
-                ctx.fillStyle = style;
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.28)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-
-            quad(p0, p1, p5, p4, fillSide);
-            quad(p1, p2, p6, p5, fillSide);
-            quad(p2, p3, p7, p6, fillSide);
-            quad(p3, p0, p4, p7, fillSide);
-            quad(p4, p5, p6, p7, fillTop);
-        }
 
         let isDragging = false;
         canvas.addEventListener('mousedown', () => {
@@ -230,24 +388,57 @@
         window.addEventListener('mousemove', (e) => {
             if (!isGameStarted || isChatOpen) return;
             if (document.pointerLockElement === canvas || isDragging) {
-                camYaw += e.movementX * 0.005;
-                camPitch = Math.max(-0.1, Math.min(1.1, camPitch + e.movementY * 0.004));
+                camYaw -= e.movementX * 0.005;
+                camPitch = Math.max(0.05, Math.min(1.25, camPitch + e.movementY * 0.004));
             }
         });
 
-        function startGame() {
+        // Плавная анимация загрузки при нажатии "ИГРАТЬ"
+        function launchGame() {
             const nick = document.getElementById('nick-input').value.trim();
             if (nick.length < 3) {
-                document.getElementById('menu-error').innerText = "Введите ник минимум из 3 символов!";
+                document.getElementById('nick-error').innerText = "Введите ник минимум из 3 символов!";
                 return;
             }
             playerNick = nick;
-            document.getElementById('server-badge').innerText = document.getElementById('server-select').value;
-            document.getElementById('menu-overlay').style.display = 'none';
-            document.getElementById('hud').style.display = 'block';
-            isGameStarted = true;
-            addChatMessage(`<span style="color:#facc15">[Сервер]: Добро пожаловать на RADMIR WEB RP, ${playerNick}!</span>`);
-            addChatMessage(`<span style="color:#c084fc">[Подсказка]: Кликни мышью по экрану для обзора на 360°. [F] — сесть в машину.</span>`);
+            const serverVal = document.getElementById('server-select').value;
+            document.getElementById('server-badge').innerText = serverVal;
+            document.getElementById('loading-server-name').innerText = "Вход на " + serverVal;
+
+            // Плавно скрываем лаунчер и показываем экран загрузки
+            document.getElementById('launcher-screen').classList.add('hidden');
+            const loader = document.getElementById('loading-screen');
+            const fill = document.getElementById('progress-fill');
+            const status = document.getElementById('loading-status');
+            loader.classList.add('active');
+
+            let progress = 0;
+            const steps = [
+                { p: 25, text: "Соединение с игровым сервером..." },
+                { p: 55, text: "Загрузка текстур города Арзамас..." },
+                { p: 85, text: "Синхронизация автопарка и персонажа..." },
+                { p: 100, text: "Добро пожаловать в игру!" }
+            ];
+            let stepIdx = 0;
+
+            const timer = setInterval(() => {
+                progress += 4;
+                fill.style.width = progress + "%";
+                if (stepIdx < steps.length && progress >= steps[stepIdx].p) {
+                    status.innerText = steps[stepIdx].text;
+                    stepIdx++;
+                }
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    setTimeout(() => {
+                        loader.classList.remove('active');
+                        document.getElementById('hud').style.display = 'block';
+                        isGameStarted = true;
+                        addChatMessage(`<span style="color:#facc15">[Сервер]: Добро пожаловать на RADMIR WEB RP, ${playerNick}!</span>`);
+                        addChatMessage(`<span style="color:#c084fc">[Подсказка]: Кликни мышью по экрану для обзора на 360°. [F] — сесть в машину.</span>`);
+                    }, 350);
+                }
+            }, 60);
         }
 
         function addChatMessage(html) {
@@ -255,7 +446,6 @@
             box.innerHTML += `<div>${html}</div>`;
             box.scrollTop = box.scrollHeight;
         }
-
         const keys = {};
         window.addEventListener('keydown', (e) => {
             if (!isGameStarted) return;
@@ -307,25 +497,32 @@
             keys[e.code] = true;
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
         function loop() {
             requestAnimationFrame(loop);
 
             if (isGameStarted && !isChatOpen) {
                 if (!currentCar) {
-                    let spd = keys['ShiftLeft'] ? 0.25 : 0.14;
-                    let moved = false, dx = 0, dz = 0;
-                    if (keys['KeyW']) { dx += Math.sin(camYaw); dz += Math.cos(camYaw); moved = true; }
-                    if (keys['KeyS']) { dx -= Math.sin(camYaw); dz -= Math.cos(camYaw); moved = true; }
+                    let spd = keys['ShiftLeft'] ? 0.24 : 0.13;
+                    let dx = 0, dz = 0, moved = false;
+                    if (keys['KeyW']) { dx -= Math.sin(camYaw); dz -= Math.cos(camYaw); moved = true; }
+                    if (keys['KeyS']) { dx += Math.sin(camYaw); dz += Math.cos(camYaw); moved = true; }
                     if (keys['KeyA']) { dx -= Math.cos(camYaw); dz += Math.sin(camYaw); moved = true; }
                     if (keys['KeyD']) { dx += Math.cos(camYaw); dz -= Math.sin(camYaw); moved = true; }
+
                     if (moved) {
                         player.x += dx * spd;
                         player.z += dz * spd;
                         player.angle = Math.atan2(dx, dz);
-                        player.walkTime += spd * 1.6;
+                        player.walkTime += spd * 1.8;
                     } else {
                         player.walkTime = 0;
                     }
+
+                    if (keys['Space'] && player.y <= 0.01) player.vy = 0.22;
+                    player.y += player.vy;
+                    if (player.y > 0) player.vy -= 0.012;
+                    else { player.y = 0; player.vy = 0; }
                 } else {
                     if (keys['KeyW']) currentCar.speed = Math.min(currentCar.speed + 0.02, 0.8);
                     else if (keys['KeyS']) currentCar.speed = Math.max(currentCar.speed - 0.02, -0.35);
@@ -333,8 +530,8 @@
 
                     if (Math.abs(currentCar.speed) > 0.01) {
                         let dir = currentCar.speed > 0 ? 1 : -1;
-                        if (keys['KeyA']) currentCar.angle -= 0.04 * dir;
-                        if (keys['KeyD']) currentCar.angle += 0.04 * dir;
+                        if (keys['KeyA']) currentCar.angle += 0.04 * dir;
+                        if (keys['KeyD']) currentCar.angle -= 0.04 * dir;
                     }
                     currentCar.x += Math.sin(currentCar.angle) * currentCar.speed;
                     currentCar.z += Math.cos(currentCar.angle) * currentCar.speed;
@@ -342,10 +539,11 @@
             }
 
             let target = currentCar || player;
-            let dist = 10.5;
-            let camX = target.x - Math.sin(camYaw) * Math.cos(camPitch) * dist;
-            let camY = 1.8 + Math.sin(camPitch) * dist;
-            let camZ = target.z - Math.cos(camYaw) * Math.cos(camPitch) * dist;
+            let ty = currentCar ? 1.2 : player.y + 1.5;
+            let dist = currentCar ? 10 : 7.5;
+            let eyeX = target.x + Math.sin(camYaw) * Math.cos(camPitch) * dist;
+            let eyeY = ty + Math.sin(camPitch) * dist;
+            let eyeZ = target.z + Math.cos(camYaw) * Math.cos(camPitch) * dist;
 
             const loc = document.getElementById('location-badge');
             if (target.x > 5 && target.z < -5) loc.innerText = "Район: Арзамасский Кремль";
@@ -353,71 +551,63 @@
             else if (target.z > 32) loc.innerText = "Район: Пост ДПС";
             else loc.innerText = "Район: Центральный проспект";
 
-            let horizonY = H * (0.48 + Math.sin(camPitch) * 0.45);
-            ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(0, 0, W, Math.max(0, horizonY));
-            ctx.fillStyle = '#365314';
-            ctx.fillRect(0, Math.max(0, horizonY), W, H);
+            gl.clearColor(0.53, 0.81, 0.98, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            setCamera(eyeX, eyeY, eyeZ, target.x, ty, target.z);
 
-            drawBox(0, 0, 0, 18, 0.03, 240, 0, '#64748b', '#94a3b8', camX, camY, camZ);
-            drawBox(0, 0.03, 0, 13, 0.04, 240, 0, '#0f172a', texAsphalt, camX, camY, camZ);
-            drawBox(0, 0.03, 0, 240, 0.04, 13, 0, '#0f172a', texAsphalt, camX, camY, camZ);
-            for (let z = -100; z <= 100; z += 14) {
-                if (Math.abs(z) > 10) drawBox(0, 0.08, z, 0.35, 0.02, 5, 0, '#facc15', '#facc15', camX, camY, camZ);
+            // Земля, тротуары и асфальт с разметкой
+            draw3DBox(0, -0.1, 0, 320, 0.2, 320, 0, textures.grass, 1, 1, 1, 40, 40);
+            draw3DBox(0, 0.01, 0, 18, 0.05, 240, 0, textures.white, 0.6, 0.65, 0.7, 1, 1);
+            draw3DBox(0, 0.03, 0, 13, 0.05, 240, 0, textures.asphalt, 1, 1, 1, 3, 45);
+            draw3DBox(0, 0.03, 0, 240, 0.05, 13, 0, textures.asphalt, 1, 1, 1, 45, 3);
+            for (let z = -100; z <= 100; z += 12) {
+                if (Math.abs(z) > 10) draw3DBox(0, 0.06, z, 0.35, 0.02, 5, 0, textures.white, 0.98, 0.8, 0.1, 1, 1);
             }
 
-            let renderList = [];
-            buildings.forEach(b => {
-                let p = project(b.x, b.h / 2, b.z, camX, camY, camZ);
-                if (p) renderList.push({ z: p.z, draw: () => drawBox(b.x, 0, b.z, b.w, b.h, b.d, 0, b.side, b.top, camX, camY, camZ) });
-            });
+            // Здания города
+            draw3DBox(26, 5.5, -25, 28, 11, 14, 0, textures.brick, 1, 1, 1, 5, 2);
+            draw3DBox(12, 11, -25, 6, 22, 6, 0, textures.brick, 1, 1, 1, 2, 4);
+            draw3DBox(-26, 4.5, -22, 24, 9, 18, 0, textures.windows, 0.4, 0.8, 1.0, 4, 2);
+            draw3DBox(12, 2, 42, 5, 4, 5, 0, textures.white, 0.95, 0.95, 0.98, 1, 1);
+            draw3DBox(12, 2.2, 42, 5.1, 0.6, 5.1, 0, textures.white, 0.15, 0.4, 0.9, 1, 1);
+            draw3DBox(-25, 9, 24, 14, 18, 14, 0, textures.windows, 0.9, 0.92, 0.95, 3, 4);
+            draw3DBox(-25, 12.5, 52, 14, 25, 14, 0, textures.windows, 1.0, 0.9, 0.65, 3, 5);
+            draw3DBox(26, 10, 26, 14, 20, 14, 0, textures.windows, 0.85, 0.9, 0.95, 3, 4);
 
-            trees.forEach(t => {
-                let p = project(t.x, 2, t.z, camX, camY, camZ);
-                if (p) renderList.push({ z: p.z, draw: () => {
-                    drawBox(t.x, 0, t.z, 0.5, 2.5, 0.5, 0, '#78350f', '#451a03', camX, camY, camZ);
-                    drawBox(t.x, 2.5, t.z, 2.8, 3.2, 2.8, 0, '#15803d', '#22c55e', camX, camY, camZ);
-                }});
-            });
+            // Деревья
+            for (let z = -72; z <= 72; z += 18) {
+                if (Math.abs(z) < 12) continue;
+                [-11, 11].forEach(tx => {
+                    draw3DBox(tx, 1.25, z, 0.5, 2.5, 0.5, 0, textures.white, 0.45, 0.25, 0.1, 1, 1);
+                    draw3DBox(tx, 3.8, z, 2.8, 3.0, 2.8, 0, textures.grass, 0.6, 1.1, 0.5, 2, 2);
+                });
+            }
 
+            // Машины
             cars.forEach(c => {
-                let p = project(c.x, 1, c.z, camX, camY, camZ);
-                if (p) renderList.push({ z: p.z, draw: () => {
-                    drawBox(c.x, 0.05, c.z, 2.4, 0.02, 4.6, c.angle, 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.45)', camX, camY, camZ);
-                    drawBox(c.x, 0.35, c.z, 2.2, 0.65, 4.4, c.angle, c.color, c.roof, camX, camY, camZ);
-                    drawBox(c.x, 1.0, c.z, 1.8, 0.55, 2.2, c.angle, '#0f172a', '#38bdf8', camX, camY, camZ);
-                    let fx = c.x + Math.sin(c.angle) * 2.22;
-                    let fz = c.z + Math.cos(c.angle) * 2.22;
-                    drawBox(fx, 0.55, fz, 1.6, 0.2, 0.1, c.angle, '#fef08a', '#fef08a', camX, camY, camZ);
-                }});
+                const cos = Math.cos(c.angle), sin = Math.sin(c.angle);
+                draw3DBox(c.x, 0.65, c.z, 2.2, 0.65, 4.4, c.angle, textures.white, c.r, c.g, c.b, 1, 1);
+                draw3DBox(c.x - sin * 0.2, 1.25, c.z - cos * 0.2, 1.8, 0.55, 2.2, c.angle, textures.white, 0.08, 0.12, 0.18, 1, 1);
+                draw3DBox(c.x + sin * 2.21, 0.65, c.z + cos * 2.21, 1.6, 0.2, 0.08, c.angle, textures.white, 1.0, 0.95, 0.6, 1, 1);
+                [-0.95, 0.95].forEach(wx => {
+                    [-1.3, 1.3].forEach(wz => {
+                        draw3DBox(c.x + wx * cos + wz * sin, 0.35, c.z - wx * sin + wz * cos, 0.35, 0.7, 0.7, c.angle, textures.white, 0.1, 0.1, 0.1, 1, 1);
+                    });
+                });
             });
 
+            // Анимированный 3D-зомби
             if (!currentCar) {
-                let p = project(player.x, 1, player.z, camX, camY, camZ);
-                if (p) renderList.push({ z: p.z, draw: () => {
-                    let swing = Math.sin(player.walkTime) * 0.35;
-                    let cos = Math.cos(player.angle), sin = Math.sin(player.angle);
-                    drawBox(player.x, 0.05, player.z, 0.9, 0.02, 0.9, player.angle, 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.4)', camX, camY, camZ);
-                    drawBox(player.x - 0.18 * cos, 0, player.z + 0.18 * sin + swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
-                    drawBox(player.x + 0.18 * cos, 0, player.z - 0.18 * sin - swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
-                    drawBox(player.x, 0.8, player.z, 0.75, 0.9, 0.38, player.angle, texZombieClothes, '#3b82f6', camX, camY, camZ);
-                    drawBox(player.x - 0.48 * cos + sin * 0.25, 1.35, player.z + 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
-                    drawBox(player.x + 0.48 * cos + sin * 0.25, 1.35, player.z - 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
-                    drawBox(player.x, 1.7, player.z, 0.5, 0.5, 0.5, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
-                    drawBox(player.x + sin * 0.26, 1.92, player.z + cos * 0.26, 0.32, 0.08, 0.05, player.angle, '#ef4444', '#ef4444', camX, camY, camZ);
-
-                    let headPos = project(player.x, 2.5, player.z, camX, camY, camZ);
-                    if (headPos) {
-                        ctx.fillStyle = 'white';
-                        ctx.font = 'bold 13px Segoe UI';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(playerNick, headPos.x, headPos.y);
-                    }
-                }});
+                const cos = Math.cos(player.angle), sin = Math.sin(player.angle);
+                const swing = Math.sin(player.walkTime) * 0.25;
+                draw3DBox(player.x - 0.18 * cos + sin * swing, player.y + 0.4, player.z + 0.18 * sin + cos * swing, 0.24, 0.8, 0.24, player.angle, textures.white, 0.15, 0.2, 0.28, 1, 1);
+                draw3DBox(player.x + 0.18 * cos - sin * swing, player.y + 0.4, player.z - 0.18 * sin - cos * swing, 0.24, 0.8, 0.24, player.angle, textures.white, 0.15, 0.2, 0.28, 1, 1);
+                draw3DBox(player.x, player.y + 1.25, player.z, 0.72, 0.9, 0.38, player.angle, textures.white, 0.15, 0.35, 0.75, 1, 1);
+                draw3DBox(player.x - 0.48 * cos + sin * 0.25, player.y + 1.48, player.z + 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, textures.white, 0.25, 0.75, 0.35, 1, 1);
+                draw3DBox(player.x + 0.48 * cos + sin * 0.25, player.y + 1.48, player.z - 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, textures.white, 0.25, 0.75, 0.35, 1, 1);
+                draw3DBox(player.x, player.y + 1.95, player.z, 0.5, 0.5, 0.5, player.angle, textures.white, 0.25, 0.75, 0.35, 1, 1);
+                draw3DBox(player.x + sin * 0.26, player.y + 2.0, player.z + cos * 0.26, 0.32, 0.08, 0.04, player.angle, textures.white, 0.95, 0.15, 0.15, 1, 1);
             }
-
-            renderList.sort((a, b) => b.z - a.z);
-            renderList.forEach(item => item.draw());
         }
         loop();
     </script>
