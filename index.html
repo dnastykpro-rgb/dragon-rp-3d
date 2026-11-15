@@ -3,106 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Test Server 3D — Mobile & Admin</title>
+    <title>Test Server 3D — Smooth UI & Admin</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
-        body { overflow: hidden; background: #0b0f19; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
+        body { overflow: hidden; background: #070a12; }
         canvas { display: block; width: 100vw; height: 100vh; }
 
+        /* Плавное появление и скрытие лаунчера */
         #launcher {
             position: fixed; inset: 0; z-index: 100;
-            background: radial-gradient(circle at center, #1e1b4b 0%, #090d16 100%);
-            transition: opacity 0.4s ease;
+            background: radial-gradient(circle at 75% 25%, #2e1065 0%, #0f172a 55%, #060913 100%);
+            opacity: 1; transform: scale(1);
+            transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        #launcher.hidden { opacity: 0; pointer-events: none; }
+        #launcher.hidden { opacity: 0; pointer-events: none; transform: scale(1.04); }
 
         .auth-panel {
-            position: absolute; top: 20px; left: 20px;
-            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
-            border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 18px; padding: 16px; width: 280px;
+            position: absolute; top: 24px; left: 24px;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 18px; padding: 18px; width: 290px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            animation: slideDown 0.5s ease-out;
         }
-        .auth-panel label { display: block; font-size: 11px; color: #c084fc; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+
+        .auth-panel label { display: block; font-size: 11px; color: #c084fc; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.8px; }
         .auth-panel input {
             width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 10px;
-            padding: 10px; color: white; font-size: 14px; outline: none; margin-bottom: 10px; touch-action: auto;
+            padding: 10px 12px; color: white; font-size: 14px; outline: none; margin-bottom: 12px; touch-action: auto;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
-        #auth-msg { color: #f87171; font-size: 12px; min-height: 16px; }
+        .auth-panel input:focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25); }
+        #auth-msg { color: #f87171; font-size: 12px; min-height: 16px; transition: opacity 0.2s; }
 
         .play-panel {
-            position: absolute; bottom: 20px; right: 20px; display: flex; align-items: center; gap: 10px;
-            background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 18px; padding: 10px 14px;
+            position: absolute; bottom: 24px; right: 24px; display: flex; align-items: center; gap: 12px;
+            background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 12px 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            animation: slideUp 0.5s ease-out;
         }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
         .play-panel select {
             background: #1e293b; color: white; border: 1px solid #334155;
-            padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none;
+            padding: 13px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; outline: none;
+            transition: border-color 0.25s ease;
         }
         .play-panel button {
             background: linear-gradient(135deg, #9333ea, #4f46e5); color: white; border: none;
-            padding: 12px 26px; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer;
+            padding: 13px 32px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 6px 20px rgba(147, 51, 234, 0.4);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, box-shadow 0.2s ease;
         }
+        .play-panel button:hover { transform: translateY(-2px) scale(1.02); filter: brightness(1.12); box-shadow: 0 10px 25px rgba(147, 51, 234, 0.6); }
+        .play-panel button:active { transform: scale(0.96); }
+        /* Плавное появление игрового HUD */
+        #hud {
+            position: fixed; inset: 0; pointer-events: none;
+            opacity: 0; transition: opacity 0.6s ease;
+        }
+        #hud.visible { opacity: 1; }
 
-        #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
-        #top-right-hud { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: auto; }
+        #top-right-hud { position: absolute; top: 16px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: auto; }
         #badge {
-            background: rgba(15, 23, 42, 0.85); color: #c084fc; padding: 8px 14px;
-            border-radius: 12px; font-weight: bold; font-size: 13px; border: 1px solid rgba(168, 85, 247, 0.3);
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); color: #c084fc;
+            padding: 9px 15px; border-radius: 12px; font-weight: bold; font-size: 13px; border: 1px solid rgba(168, 85, 247, 0.35);
         }
         #open-admin-btn {
-            display: none; background: linear-gradient(135deg, #dc2626, #991b1d); color: white;
-            border: 1px solid #fca5a5; padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer;
+            display: none; background: linear-gradient(135deg, #ef4444, #991b1b); color: white;
+            border: 1px solid #fca5a5; padding: 9px 16px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
         }
+        #open-admin-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.65); }
+        #open-admin-btn:active { transform: scale(0.95); }
 
-        #chat-box { position: absolute; top: 15px; left: 15px; width: 340px; max-width: 60vw; pointer-events: auto; }
+        #chat-box { position: absolute; top: 16px; left: 16px; width: 350px; max-width: 60vw; pointer-events: auto; }
         #chat-log {
-            background: rgba(15, 23, 42, 0.65); border-radius: 12px; padding: 10px;
-            height: 130px; overflow-y: auto; color: white; font-size: 12px; line-height: 1.4;
-            display: flex; flex-direction: column; justify-content: flex-end;
+            background: rgba(15, 23, 42, 0.68); backdrop-filter: blur(6px); border-radius: 14px; padding: 11px;
+            height: 140px; overflow-y: auto; color: white; font-size: 12.5px; line-height: 1.45;
+            display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.08);
         }
         #chat-input {
-            display: none; width: 100%; margin-top: 6px; padding: 9px 12px; border-radius: 10px;
+            width: 100%; margin-top: 6px; padding: 10px 13px; border-radius: 10px;
             border: 1px solid #a855f7; background: #0f172a; color: white; font-size: 14px; outline: none; touch-action: auto;
+            opacity: 0; transform: translateY(-6px); pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s ease;
         }
+        #chat-input.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
+        /* Мобильный джойстик как в Black Russia */
         #joystick-zone {
-            position: absolute; bottom: 25px; left: 25px; width: 130px; height: 130px;
-            background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25);
+            position: absolute; bottom: 26px; left: 26px; width: 130px; height: 130px;
+            background: rgba(255, 255, 255, 0.07); border: 2px solid rgba(255, 255, 255, 0.25);
             border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center;
+            transition: border-color 0.2s ease, background 0.2s ease;
         }
+        #joystick-zone:active { border-color: #c084fc; background: rgba(192, 132, 252, 0.12); }
         #joystick-stick {
             width: 54px; height: 54px; background: radial-gradient(circle, #c084fc, #7e22ce);
             border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transform: translate(0px, 0px);
+            transition: transform 0.08s ease-out;
         }
 
-        #mobile-actions {
-            position: absolute; bottom: 25px; right: 25px; display: flex; gap: 10px; pointer-events: auto;
-        }
+        /* Плавные кнопки действий */
+        #mobile-actions { position: absolute; bottom: 26px; right: 26px; display: flex; gap: 10px; pointer-events: auto; }
         .act-btn {
             width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
-            background: rgba(15, 23, 42, 0.8); color: white; font-weight: bold; font-size: 12px;
+            background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(6px); color: white; font-weight: 800; font-size: 11px;
             display: flex; justify-content: center; align-items: center; cursor: pointer;
+            transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s ease, border-color 0.18s ease;
         }
-        .act-btn:active { background: #7e22ce; transform: scale(0.95); }
+        .act-btn:hover { border-color: #c084fc; transform: translateY(-2px); }
+        .act-btn:active { background: #7e22ce; transform: scale(0.9); }
 
+        /* Плавная модальная Админ-Панель (10 уровней) */
         #admin-modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 340px; max-width: 92vw; background: #111827; border: 2px solid #ef4444;
-            border-radius: 20px; padding: 20px; z-index: 200; color: white; pointer-events: auto;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.85);
+            position: fixed; top: 50%; left: 50%;
+            width: 340px; max-width: 92vw; background: rgba(17, 24, 39, 0.96); backdrop-filter: blur(14px);
+            border: 2px solid #ef4444; border-radius: 20px; padding: 20px; z-index: 200; color: white;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+            opacity: 0; pointer-events: none; transform: translate(-50%, -46%) scale(0.92);
+            transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1), transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
         }
+        #admin-modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
         #admin-modal h3 { color: #f87171; font-size: 17px; margin-bottom: 12px; text-align: center; }
         #admin-modal input {
-            width: 100%; background: #1e293b; border: 1px solid #475569; border-radius: 8px;
-            padding: 8px 10px; color: white; font-size: 13px; margin-bottom: 10px; outline: none; touch-action: auto;
+            width: 100%; background: #1e293b; border: 1px solid #475569; border-radius: 9px;
+            padding: 9px 11px; color: white; font-size: 13px; margin-bottom: 10px; outline: none; touch-action: auto;
+            transition: border-color 0.2s;
         }
-        .adm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        #admin-modal input:focus { border-color: #ef4444; }
+        .adm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .adm-btn {
-            background: #1e293b; border: 1px solid #334155; color: white; padding: 10px 6px;
+            background: #1e293b; border: 1px solid #334155; color: white; padding: 11px 6px;
             border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+            transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
         }
-        .adm-btn:hover { background: #dc2626; border-color: #fca5a5; }
-        .adm-close { width: 100%; background: #334155; border: none; color: white; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .adm-btn:hover { background: #dc2626; border-color: #fca5a5; transform: translateY(-1px); }
+        .adm-btn:active { transform: scale(0.95); }
+        .adm-close {
+            width: 100%; background: #334155; border: none; color: white; padding: 11px;
+            border-radius: 10px; font-weight: bold; cursor: pointer; transition: background 0.2s;
+        }
+        .adm-close:hover { background: #475569; }
 
         #labels-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
         .player-tag {
@@ -135,16 +180,11 @@
             <div id="badge">Test Server #1</div>
             <button id="open-admin-btn" onclick="toggleAdminPanel()">АДМИН-ПАНЕЛЬ</button>
         </div>
-
         <div id="chat-box">
             <div id="chat-log"></div>
             <input type="text" id="chat-input" placeholder="Сообщение в чат...">
         </div>
-
-        <div id="joystick-zone">
-            <div id="joystick-stick"></div>
-        </div>
-
+        <div id="joystick-zone"><div id="joystick-stick"></div></div>
         <div id="mobile-actions">
             <div class="act-btn" onclick="openMobileChat()">ЧАТ</div>
             <div class="act-btn" onclick="tryPassenger()">ПАСС</div>
@@ -158,209 +198,246 @@
         <input type="text" id="adm-target-nick" placeholder="Ник игрока (для ТП / Кика / Админки)">
         <input type="number" id="adm-set-lvl" placeholder="Уровень админки (1 - 10)" min="0" max="10">
         <div class="adm-grid">
-            <button class="adm-btn" onclick="admAction('fly')">Режим полёта (Fly)</button>
-            <button class="adm-btn" onclick="admAction('veh')">Заспавнить авто</button>
+            <button class="adm-btn" onclick="admAction('fly')">Полёт (Fly)</button>
+            <button class="adm-btn" onclick="admAction('veh')">Спавн авто</button>
             <button class="adm-btn" onclick="admAction('tp')">ТП к игроку</button>
-            <button class="adm-btn" onclick="admAction('gethere')">ТП игрока к себе</button>
-            <button class="adm-btn" onclick="admAction('makeadmin')">Выдать админку</button>
-            <button class="adm-btn" onclick="admAction('kick')">Кикнуть игрока</button>
+            <button class="adm-btn" onclick="admAction('gethere')">ТП к себе</button>
+            <button class="adm-btn" onclick="admAction('makeadmin')">Выдать адм</button>
+            <button class="adm-btn" onclick="admAction('kick')">Кикнуть</button>
         </div>
         <button class="adm-close" onclick="toggleAdminPanel()">ЗАКРЫТЬ ПАНЕЛЬ</button>
     </div>
 
-    <script src="./three.min.js"></script>
-    <script src="./GLTFLoader.js"></script>
+    <canvas id="glCanvas"></canvas>
+    <script>
         const DB_URL = "https://" + "test-83342-default-rtdb" + ".firebaseio.com";
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl');
+        let W, H;
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; gl.viewport(0, 0, W, H); }
+        window.addEventListener('resize', resize);
+        resize();
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.Fog(0x87ceeb, 40, 180);
+        const vs = `
+            attribute vec3 aPos, aNorm; attribute vec2 aUV;
+            uniform mat4 uProj, uView, uModel; uniform vec2 uUVScale;
+            varying vec3 vNorm; varying vec2 vUV;
+            void main() {
+                gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+                vNorm = mat3(uModel) * aNorm; vUV = aUV * uUVScale;
+            }
+        `;
+        const fs = `
+            precision mediump float;
+            varying vec3 vNorm; varying vec2 vUV;
+            uniform sampler2D uTex; uniform vec3 uTint;
+            void main() {
+                vec3 sun = normalize(vec3(0.4, 0.9, 0.3));
+                float light = max(dot(normalize(vNorm), sun), 0.0) * 0.6 + 0.45;
+                gl_FragColor = vec4(texture2D(uTex, vUV).rgb * uTint * light, 1.0);
+            }
+        `;
+        function makeShader(t, s) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; }
+        const prog = gl.createProgram();
+        gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, vs));
+        gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(prog); gl.useProgram(prog); gl.enable(gl.DEPTH_TEST);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.2, 250);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
+        function createTex(grid) {
+            const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+            const g = c.getContext('2d');
+            if (grid) {
+                g.fillStyle = '#334155'; g.fillRect(0, 0, 128, 128);
+                g.fillStyle = '#3b4a61'; g.fillRect(0, 0, 64, 64); g.fillRect(64, 64, 64, 64);
+                g.strokeStyle = 'rgba(255,255,255,0.15)'; g.strokeRect(0, 0, 128, 128);
+            } else { g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 128); }
+            const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            return t;
+        }
+        const texGrid = createTex(true), texSolid = createTex(false);
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        const boxData = new Float32Array([
+            -0.5,-0.5,0.5,0,0,1,0,1, 0.5,-0.5,0.5,0,0,1,1,1, 0.5,0.5,0.5,0,0,1,1,0, -0.5,-0.5,0.5,0,0,1,0,1, 0.5,0.5,0.5,0,0,1,1,0, -0.5,0.5,0.5,0,0,1,0,0,
+            0.5,-0.5,-0.5,0,0,-1,0,1, -0.5,-0.5,-0.5,0,0,-1,1,1, -0.5,0.5,-0.5,0,0,-1,1,0, 0.5,-0.5,-0.5,0,0,-1,0,1, -0.5,0.5,-0.5,0,0,-1,1,0, 0.5,0.5,-0.5,0,0,-1,0,0,
+            -0.5,0.5,0.5,0,1,0,0,1, 0.5,0.5,0.5,0,1,0,1,1, 0.5,0.5,-0.5,0,1,0,1,0, -0.5,0.5,0.5,0,1,0,0,1, 0.5,0.5,-0.5,0,1,0,1,0, -0.5,0.5,-0.5,0,1,0,0,0,
+            -0.5,-0.5,-0.5,0,-1,0,0,1, 0.5,-0.5,-0.5,0,-1,0,1,1, 0.5,-0.5,0.5,0,-1,0,1,0, -0.5,-0.5,-0.5,0,-1,0,0,1, 0.5,-0.5,0.5,0,-1,0,1,0, -0.5,-0.5,0.5,0,-1,0,0,0,
+            0.5,-0.5,0.5,1,0,0,0,1, 0.5,-0.5,-0.5,1,0,0,1,1, 0.5,0.5,-0.5,1,0,0,1,0, 0.5,-0.5,0.5,1,0,0,0,1, 0.5,0.5,-0.5,1,0,0,1,0, 0.5,0.5,0.5,1,0,0,0,0,
+            -0.5,-0.5,-0.5,-1,0,0,0,1, -0.5,-0.5,0.5,-1,0,0,1,1, -0.5,0.5,0.5,-1,0,0,1,0, -0.5,-0.5,-0.5,-1,0,0,0,1, -0.5,0.5,0.5,-1,0,0,1,0, -0.5,0.5,-0.5,-1,0,0,0,0
+        ]);
+        const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.bufferData(gl.ARRAY_BUFFER, boxData, gl.STATIC_DRAW);
 
-        scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 0.75));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-        dirLight.position.set(30, 50, 25);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
+        const sphereVerts = [];
+        for (let lat = 0; lat < 10; lat++) {
+            const t1 = lat * Math.PI / 10, t2 = (lat + 1) * Math.PI / 10;
+            for (let lon = 0; lon < 14; lon++) {
+                const p1 = lon * 2 * Math.PI / 14, p2 = (lon + 1) * 2 * Math.PI / 14;
+                const pt = (t, p) => [Math.sin(t)*Math.cos(p), Math.cos(t), Math.sin(t)*Math.sin(p)];
+                const a = pt(t1, p1), b = pt(t2, p1), c = pt(t2, p2), d = pt(t1, p2);
+                [a, b, c, a, c, d].forEach(v => sphereVerts.push(v.at(0)*0.5, v.at(1)*0.5, v.at(2)*0.5, v.at(0), v.at(1), v.at(2), 0.5, 0.5));
+            }
+        }
+        const sphereVbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereVerts), gl.STATIC_DRAW);
+        const aPos = gl.getAttribLocation(prog, 'aPos'), aNorm = gl.getAttribLocation(prog, 'aNorm'), aUV = gl.getAttribLocation(prog, 'aUV');
+        gl.enableVertexAttribArray(aPos); gl.enableVertexAttribArray(aNorm); gl.enableVertexAttribArray(aUV);
+        const uProj = gl.getUniformLocation(prog, 'uProj'), uView = gl.getUniformLocation(prog, 'uView'), uModel = gl.getUniformLocation(prog, 'uModel'), uUVScale = gl.getUniformLocation(prog, 'uUVScale'), uTint = gl.getUniformLocation(prog, 'uTint');
 
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        scene.add(floor);
-
-        const gridHelper = new THREE.GridHelper(250, 100, 0x64748b, 0x475569);
-        gridHelper.position.y = 0.01;
-        scene.add(gridHelper);
-
-        const gltfLoader = new THREE.GLTFLoader();
-        let carTemplate = null;
-
-        function createFallbackCar(hexColor) {
-            const grp = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.65, 4.3), new THREE.MeshStandardMaterial({ color: hexColor, roughness: 0.3, metalness: 0.6 }));
-            body.position.y = 0.55; body.castShadow = true;
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.5, 2.0), new THREE.MeshStandardMaterial({ color: 0x111827 }));
-            cabin.position.set(0, 1.1, -0.2); cabin.castShadow = true;
-            grp.add(body, cabin);
-            return grp;
+        function drawBox(x, y, z, sx, sy, sz, rotY, tex, r, g, b, uv = 1) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+            const c = Math.cos(rotY), s = Math.sin(rotY);
+            gl.uniformMatrix4fv(uModel, false, new Float32Array([sx*c,0,-sx*s,0, 0,sy,0,0, sz*s,0,sz*c,0, x,y,z,1]));
+            gl.uniform2f(uUVScale, uv, uv); gl.uniform3f(uTint, r, g, b); gl.bindTexture(gl.TEXTURE_2D, tex); gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
 
-        function attachDoors(carGroup, colorHex) {
-            const doorMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.35, metalness: 0.5 });
-            const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.8 });
-            function makeDoor(side) {
-                const pivot = new THREE.Group();
-                pivot.position.set(side * 0.98, 0.55, 0.65);
-                const panel = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.52, 1.15), doorMat);
-                panel.position.set(0, 0, -0.55);
-                const win = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.36, 0.95), glassMat);
-                win.position.set(0, 0.42, -0.52);
-                pivot.add(panel, win);
-                carGroup.add(pivot);
-                return pivot;
-            }
-            carGroup.userData.doorL = makeDoor(-1);
-            carGroup.userData.doorR = makeDoor(1);
-            carGroup.userData.doorLTarget = 0;
-            carGroup.userData.doorRTarget = 0;
+        function drawPart(x, y, z, sx, sy, sz, rotY, rotX, r, g, b) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo);
+            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+            const cy = Math.cos(rotY), sy_ = Math.sin(rotY), cx = Math.cos(rotX), sx_ = Math.sin(rotX);
+            gl.uniformMatrix4fv(uModel, false, new Float32Array([sx*cy,0,-sx*sy_,0, sy*sy_*sx_,sy*cx,sy*cy*sx_,0, sz*sy_*cx,-sz*sx_,sz*cy*cx,0, x,y,z,1]));
+            gl.uniform2f(uUVScale, 1, 1); gl.uniform3f(uTint, r, g, b); gl.bindTexture(gl.TEXTURE_2D, texSolid); gl.drawArrays(gl.TRIANGLES, 0, sphereVerts.length / 8);
         }
 
-        const myCarMesh = new THREE.Group();
-        myCarMesh.position.set(3, 0, 0);
-        scene.add(myCarMesh);
-        attachDoors(myCarMesh, 0x7c3aed);
+        function drawDetailedCar(cx, cz, ang, r, g, b, doorL = 0, doorR = 0) {
+            const c = Math.cos(ang), s = Math.sin(ang);
+            const put = (ox, oy, oz, sx, sy, sz, rotAdd, cr, cg, cb) => {
+                drawBox(cx + ox*c + oz*s, oy, cz - ox*s + oz*c, sx, sy, sz, ang + rotAdd, texSolid, cr, cg, cb);
+            };
+            put(0, 0.45, 0, 2.05, 0.42, 4.5, 0, r, g, b);
+            put(0, 0.68, 1.45, 1.95, 0.25, 1.4, 0, r*0.95, g*0.95, b*0.95);
+            put(0, 0.70, -1.6, 1.95, 0.28, 1.1, 0, r*0.95, g*0.95, b*0.95);
+            put(0, 1.05, -0.15, 1.68, 0.52, 2.0, 0, 0.08, 0.11, 0.16);
+            put(0, 1.32, -0.15, 1.62, 0.08, 1.85, 0, r, g, b);
+            put(0, 0.96, -2.05, 1.85, 0.07, 0.28, 0, 0.1, 0.1, 0.12);
+            put(0, 0.35, 2.28, 2.08, 0.24, 0.16, 0, 0.12, 0.12, 0.14);
+            put(-0.68, 0.58, 2.26, 0.42, 0.16, 0.08, 0, 1.0, 0.96, 0.75);
+            put(0.68, 0.58, 2.26, 0.42, 0.16, 0.08, 0, 1.0, 0.96, 0.75);
+            put(-0.68, 0.62, -2.26, 0.45, 0.15, 0.08, 0, 0.95, 0.12, 0.12);
+            put(0.68, 0.62, -2.26, 0.45, 0.15, 0.08, 0, 0.95, 0.12, 0.12);
 
-        gltfLoader.load('./car.glb', (gltf) => {
-            const model = gltf.scene;
-            const box = new THREE.Box3().setFromObject(model);
-            const size = box.getSize(new THREE.Vector3());
-            const scale = 4.4 / (Math.max(size.x, size.y, size.z) || 1);
-            model.scale.set(scale, scale, scale);
-            const sBox = new THREE.Box3().setFromObject(model);
-            model.position.y = -sBox.min.y;
-            model.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
-            carTemplate = model;
-            myCarMesh.add(carTemplate.clone());
-        }, undefined, () => {
-            myCarMesh.add(createFallbackCar(0x7c3aed));
-        });
+            // Анимированные водительская и пассажирская двери
+            const lx = -1.02 - Math.sin(Math.abs(doorL)) * 0.5;
+            const lz = 0.05 - (1 - Math.cos(doorL)) * 0.5;
+            put(lx, 0.55, lz, 0.12, 0.48, 1.15, doorL, r*1.05, g*1.05, b*1.05);
 
-        function createHumanModel(adminLvl) {
-            const root = new THREE.Group();
-            const isAdm = adminLvl > 0;
-            const matHoodie = new THREE.MeshStandardMaterial({ color: isAdm ? 0x111115 : 0x1e2538, roughness: 0.5 });
-            const matTrim = new THREE.MeshStandardMaterial({ color: isAdm ? 0xef4444 : 0xf1f5f9, emissive: isAdm ? 0x7f1d1d : 0x000000 });
-            const matSkin = new THREE.MeshStandardMaterial({ color: 0xc48f70, roughness: 0.6 });
-            const matJeans = new THREE.MeshStandardMaterial({ color: isAdm ? 0x09090b : 0x171923, roughness: 0.8 });
-            const matGlove = new THREE.MeshStandardMaterial({ color: isAdm ? 0xdc2626 : 0x111113, roughness: 0.4 });
+            const rx = 1.02 + Math.sin(Math.abs(doorR)) * 0.5;
+            const rz = 0.05 - (1 - Math.cos(doorR)) * 0.5;
+            put(rx, 0.55, rz, 0.12, 0.48, 1.15, doorR, r*1.05, g*1.05, b*1.05);
 
-            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.20, 0.58, 12), matHoodie);
-            torso.position.y = 1.24; torso.castShadow = true;
-            const tee = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.21, 0.12, 12), matTrim);
-            tee.position.y = 0.92; tee.castShadow = true;
-
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), matSkin);
-            head.position.set(0, 1.68, 0.02); head.castShadow = true;
-            const hood = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 14), matHoodie);
-            hood.position.set(0, 1.70, -0.02); hood.castShadow = true;
-
-            if (isAdm) {
-                const crown = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.02, 8, 20), matTrim);
-                crown.rotation.x = Math.PI / 2;
-                crown.position.set(0, 1.92, 0);
-                root.add(crown);
-            }
-
-            function makeArm(side) {
-                const shoulder = new THREE.Group();
-                shoulder.position.set(side * 0.26, 1.48, 0);
-                const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.28, 10), matHoodie);
-                upper.position.y = -0.14; upper.castShadow = true;
-                const elbow = new THREE.Group(); elbow.position.y = -0.28;
-                const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.045, 0.26, 10), matHoodie);
-                fore.position.y = -0.13; fore.castShadow = true;
-                const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), matGlove);
-                hand.position.y = -0.27;
-                elbow.add(fore, hand); shoulder.add(upper, elbow);
-                return { shoulder, elbow };
-            }
-
-            function makeLeg(side) {
-                const hip = new THREE.Group();
-                hip.position.set(side * 0.11, 0.88, 0);
-                const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.085, 0.42, 10), matJeans);
-                thigh.position.y = -0.21; thigh.castShadow = true;
-                const knee = new THREE.Group(); knee.position.y = -0.42;
-                const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.08, 0.40, 10), matJeans);
-                shin.position.y = -0.20; shin.castShadow = true;
-                const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, 0.26), matTrim);
-                shoe.position.set(0, -0.41, 0.05); shoe.castShadow = true;
-                knee.add(shin, shoe); hip.add(thigh, knee);
-                return { hip, knee };
-            }
-
-            const armL = makeArm(-1), armR = makeArm(1);
-            const legL = makeLeg(-1), legR = makeLeg(1);
-            root.add(torso, tee, head, hood, armL.shoulder, armR.shoulder, legL.hip, legR.hip);
-            root.userData = { armL, armR, legL, legR };
-            return root;
+            [-0.98, 0.98].forEach(wx => [-1.35, 1.35].forEach(wz => {
+                put(wx, 0.36, wz, 0.32, 0.72, 0.72, 0, 0.08, 0.08, 0.09);
+                put(wx * 1.04, 0.36, wz, 0.1, 0.42, 0.42, 0, 0.75, 0.78, 0.82);
+            }));
         }
-        function animateHuman(mesh, walk, isAir) {
-            const { armL, armR, legL, legR } = mesh.userData;
+
+        function drawHuman(hx, hy, hz, ang, walk, admLvl) {
+            const isAdm = admLvl > 0;
+            const isAir = hy > 0.04;
+            const isMoving = walk > 0.01 && !isAir;
+            const cycle = walk;
+            const bob = isMoving ? Math.abs(Math.cos(cycle)) * 0.025 : Math.sin(Date.now() * 0.0025) * 0.008;
+
+            const pc = Math.cos(ang), ps = Math.sin(ang);
+            const p = (ox, oy, oz, sx, sy, sz, rx, cr, cg, cb) => {
+                drawPart(hx + ox * pc + oz * ps, hy + bob + oy, hz - ox * ps + oz * pc, sx, sy, sz, ang, rx, cr, cg, cb);
+            };
+
+            const skin = [0.76, 0.56, 0.44];
+            const hoodie = isAdm ? [0.08, 0.08, 0.10] : [0.14, 0.16, 0.22];
+            const accent = isAdm ? [0.95, 0.15, 0.15] : [0.92, 0.92, 0.94];
+            const jeans = isAdm ? [0.06, 0.06, 0.08] : [0.09, 0.10, 0.13];
+
+            let lean = isAir ? 0.14 : (isMoving ? 0.08 : 0.0);
+            let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0, shL = 0, shR = 0, elbL = 0.25, elbR = 0.25;
+
             if (isAir) {
-                legL.hip.rotation.x = -0.45; legL.knee.rotation.x = 0.75;
-                legR.hip.rotation.x = -0.15; legR.knee.rotation.x = 0.45;
-                armL.shoulder.rotation.x = -0.25; armL.elbow.rotation.x = -0.85;
-                armR.shoulder.rotation.x = 0.20;  armR.elbow.rotation.x = -0.75;
-            } else if (walk > 0.01) {
-                const s = Math.sin(walk);
-                legL.hip.rotation.x = s * 0.48; legR.hip.rotation.x = -s * 0.48;
-                legL.knee.rotation.x = Math.max(0, -Math.sin(walk - 0.5)) * 0.85 + 0.1;
-                legR.knee.rotation.x = Math.max(0, Math.sin(walk - 0.5)) * 0.85 + 0.1;
-                armL.shoulder.rotation.x = -s * 0.42; armR.shoulder.rotation.x = s * 0.42;
-                armL.elbow.rotation.x = -(0.35 + Math.max(0, s) * 0.55);
-                armR.elbow.rotation.x = -(0.35 + Math.max(0, -s) * 0.55);
+                hipL = -0.45; kneeL = 0.75; hipR = -0.15; kneeR = 0.45;
+                shL = -0.25; elbL = 0.85; shR = 0.20; elbR = 0.75;
+            } else if (isMoving) {
+                hipL = Math.sin(cycle) * 0.48; hipR = -Math.sin(cycle) * 0.48;
+                kneeL = Math.max(0, -Math.sin(cycle - 0.5)) * 0.85 + 0.12;
+                kneeR = Math.max(0, Math.sin(cycle - 0.5)) * 0.85 + 0.12;
+                shL = -Math.sin(cycle) * 0.42; shR = Math.sin(cycle) * 0.42;
+                elbL = 0.35 + Math.max(0, Math.sin(cycle)) * 0.55;
+                elbR = 0.35 + Math.max(0, -Math.sin(cycle)) * 0.55;
             } else {
-                const idle = Math.sin(Date.now() * 0.0025) * 0.03;
-                legL.hip.rotation.x = 0; legL.knee.rotation.x = 0;
-                legR.hip.rotation.x = 0; legR.knee.rotation.x = 0;
-                armL.shoulder.rotation.x = idle; armL.elbow.rotation.x = -0.25;
-                armR.shoulder.rotation.x = -idle; armR.elbow.rotation.x = -0.25;
+                shL = Math.sin(Date.now() * 0.0025) * 0.03; shR = -shL;
             }
+
+            const headZ = 0.02 + Math.sin(lean) * 0.25;
+            p(0, 1.72, headZ, 0.22, 0.26, 0.23, 0, skin.at(0), skin.at(1), skin.at(2));
+            p(0, 1.74, headZ - 0.04, 0.285, 0.31, 0.29, -0.05, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+            if (isAdm) p(0, 1.94, headZ - 0.02, 0.26, 0.05, 0.26, 0, 1.0, 0.15, 0.15); // Красный нимб админа
+
+            p(0, 1.37, Math.sin(lean) * 0.14, 0.48, 0.38, 0.27, lean, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+            p(0, 1.15, Math.sin(lean) * 0.06, 0.42, 0.32, 0.25, lean, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+            p(0, 0.98, 0, 0.40, 0.12, 0.24, 0, accent.at(0), accent.at(1), accent.at(2));
+
+            const drawArm = (side, shAng, elbAng) => {
+                const ox = side * 0.27, shY = 1.41, shZ = Math.sin(lean) * 0.16;
+                const elbY = shY - Math.cos(shAng) * 0.28, elbZ = shZ - Math.sin(shAng) * 0.28;
+                const foreAng = shAng - elbAng;
+                const handY = elbY - Math.cos(foreAng) * 0.26, handZ = elbZ - Math.sin(foreAng) * 0.26;
+                p(ox * 1.04, (shY + elbY) * 0.5, (shZ + elbZ) * 0.5, 0.135, 0.34, 0.135, shAng, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+                p(ox * 1.05, (elbY + handY) * 0.5, (elbZ + handZ) * 0.5, 0.115, 0.30, 0.115, foreAng, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+                p(ox * 1.05, handY, handZ, 0.10, 0.13, 0.10, foreAng, accent.at(0), accent.at(1), accent.at(2));
+            };
+            drawArm(-1, shL, elbL); drawArm(1, shR, elbR);
+
+            const drawLeg = (side, hipAng, kneeAng) => {
+                const ox = side * 0.115, hipY = 0.88;
+                const kneeY = hipY - Math.cos(hipAng) * 0.40, kneeZ = -Math.sin(hipAng) * 0.40;
+                const shinAng = hipAng + kneeAng;
+                const ankleY = kneeY - Math.cos(shinAng) * 0.38, ankleZ = kneeZ - Math.sin(shinAng) * 0.38;
+                p(ox, (hipY + kneeY) * 0.5, kneeZ * 0.5, 0.21, 0.48, 0.22, hipAng, jeans.at(0), jeans.at(1), jeans.at(2));
+                p(ox, (kneeY + ankleY) * 0.5, (kneeZ + ankleZ) * 0.5, 0.19, 0.44, 0.20, shinAng, jeans.at(0), jeans.at(1), jeans.at(2));
+                p(ox, ankleY - 0.03, ankleZ + 0.06, 0.16, 0.13, 0.30, 0, accent.at(0), accent.at(1), accent.at(2));
+            };
+            drawLeg(-1, hipL, kneeL); drawLeg(1, hipR, kneeR);
+        }
+        function setCamera(eyeX, eyeY, eyeZ, tx, ty, tz) {
+            const f = 1.0 / Math.tan(0.5), aspect = W / H, near = 0.2, far = 250;
+            lastProj = new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)/(near-far),-1, 0,0,(2*far*near)/(near-far),0]);
+            gl.uniformMatrix4fv(uProj, false, lastProj);
+
+            let zx = eyeX - tx, zy = eyeY - ty, zz = eyeZ - tz, zl = Math.hypot(zx, zy, zz);
+            zx /= zl; zy /= zl; zz /= zl;
+            let xx = zz, xz = -zx, xl = Math.hypot(xx, xz) || 1; xx /= xl; xz /= xl;
+            let yx = zy * xz, yy = zz * xx - zx * xz, yz = -zy * xx;
+            lastView = new Float32Array([xx,yx,zx,0, 0,yy,0,0, xz,yz,zz,0, -(xx*eyeX+xz*eyeZ), -(yx*eyeX+yy*eyeY+yz*eyeZ), -(zx*eyeX+zy*eyeY+zz*eyeZ), 1]);
+            gl.uniformMatrix4fv(uView, false, lastView);
         }
 
-        function triggerDoorAnim(carGroup, side) {
-            if (!carGroup.userData.doorL) return;
-            if (side === "L") {
-                carGroup.userData.doorLTarget = -1.05;
-                setTimeout(() => { carGroup.userData.doorLTarget = 0; }, 1100);
-            } else {
-                carGroup.userData.doorRTarget = 1.05;
-                setTimeout(() => { carGroup.userData.doorRTarget = 0; }, 1100);
-            }
+        function toScreen(wx, wy, wz) {
+            if (!lastView || !lastProj) return null;
+            const vx = lastView.at(0)*wx + lastView.at(4)*wy + lastView.at(8)*wz + lastView.at(12);
+            const vy = lastView.at(1)*wx + lastView.at(5)*wy + lastView.at(9)*wz + lastView.at(13);
+            const vz = lastView.at(2)*wx + lastView.at(6)*wy + lastView.at(10)*wz + lastView.at(14);
+            if (vz >= -0.2) return null;
+            const px = lastProj.at(0)*vx, py = lastProj.at(5)*vy, pw = -vz;
+            return { x: (px / pw * 0.5 + 0.5) * W, y: (-py / pw * 0.5 + 0.5) * H };
         }
-
-        let myPlayerMesh = createHumanModel(0);
-        myPlayerMesh.position.set(-2.5, 0, 0);
-        scene.add(myPlayerMesh);
 
         let myNick = "", adminLevel = 0, adminFly = false, started = false, chatOpen = false;
         let camYaw = 0, camPitch = 0.28, camDist = 4.5, dragging = false;
-        let carMode = "none", hostNick = "", vy = 0, walkTime = 0, carSpeed = 0;
-        let remoteEntities = {};
-        const spawnedCars = [];
+        let carMode = "none", hostNick = "", lastProj = null, lastView = null;
+
+        const player = { x: -2.5, y: 0, z: 0, vy: 0, angle: Math.PI, walk: 0 };
+        const myCar = { x: 3.0, z: 0, angle: Math.PI, speed: 0, doorL: 0, doorR: 0, doorLT: 0, doorRT: 0 };
+        const extraCars = [];
+        let remotePlayers = {};
         let lastChatId = "";
+
+        function triggerDoor(carObj, side) {
+            if (side === "L") {
+                carObj.doorLT = -1.05;
+                setTimeout(() => { carObj.doorLT = 0; }, 1100);
+            } else {
+                carObj.doorRT = 1.05;
+                setTimeout(() => { carObj.doorRT = 0; }, 1100);
+            }
+        }
 
         async function loginAndPlay() {
             const nick = document.getElementById('nick-input').value.trim();
@@ -398,25 +475,18 @@
 
             myNick = nick;
             if (adminLevel > 0) {
-                const pos = myPlayerMesh.position.clone();
-                scene.remove(myPlayerMesh);
-                myPlayerMesh = createHumanModel(adminLevel);
-                myPlayerMesh.position.copy(pos);
-                scene.add(myPlayerMesh);
                 document.getElementById('open-admin-btn').style.display = 'block';
                 document.getElementById('adm-title').innerText = `АДМИН-ПАНЕЛЬ (LVL ${adminLevel})`;
             }
-
             document.getElementById('badge').innerHTML = (adminLevel > 0 ? `<span style="color:#f87171">[ADM ${adminLevel}]</span> ` : "") + myNick;
             document.getElementById('launcher').classList.add('hidden');
-            document.getElementById('hud').style.display = 'block';
+            document.getElementById('hud').classList.add('visible');
             started = true;
             addChat(`<span style="color:#facc15">[Сервер]: Добро пожаловать, ${myNick}!</span>`);
-            sendChatOnline(`<span style="color:#4ade80">[Сервер]: ${myNick} зашёл на сервер.</span>`);
+            sendChatOnline(`<span style="color:#4ade80">[Сервер]: ${myNick} подключился к серверу.</span>`);
         }
         function toggleAdminPanel() {
-            const modal = document.getElementById('admin-modal');
-            modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+            document.getElementById('admin-modal').classList.toggle('open');
         }
 
         async function admAction(type) {
@@ -425,21 +495,18 @@
 
             if (type === 'fly') {
                 adminFly = !adminFly;
-                vy = 0;
-                addChat(`<span style="color:#f87171">[Admin]: Режим полёта ${adminFly ? 'ВКЛЮЧЁН (Пробел — вверх, C — вниз)' : 'ВЫКЛЮЧЕН'}</span>`);
+                player.vy = 0;
+                addChat(`<span style="color:#f87171">[Admin]: Полёт ${adminFly ? 'ВКЛЮЧЁН (Пробел/ПРЫЖ — вверх, C — вниз)' : 'ВЫКЛЮЧЕН'}</span>`);
             } else if (type === 'veh' && adminLevel >= 2) {
-                const c = carTemplate ? carTemplate.clone() : createFallbackCar(0xef4444);
-                c.position.set(myPlayerMesh.position.x + 3, 0, myPlayerMesh.position.z);
-                scene.add(c);
-                spawnedCars.push(c);
+                extraCars.push({ x: player.x + 3, z: player.z, angle: player.angle, doorL: 0, doorR: 0 });
                 sendChatOnline(`<span style="color:#f87171">[A] Администратор ${myNick} заспавнил транспорт.</span>`);
-            } else if (type === 'tp' && target && remoteEntities[target]) {
-                const pos = remoteEntities[target].human.position;
-                myPlayerMesh.position.set(pos.x + 1.5, pos.y, pos.z);
+            } else if (type === 'tp' && target && remotePlayers[target]) {
+                const rp = remotePlayers[target];
+                player.x = rp.x + 1.5; player.y = rp.y; player.z = rp.z;
                 addChat(`<span style="color:#f87171">[Admin]: Вы телепортировались к ${target}.</span>`);
             } else if (type === 'gethere' && target && adminLevel >= 3) {
                 await fetch(DB_URL + "/commands/" + encodeURIComponent(target) + ".json", {
-                    method: 'PUT', body: JSON.stringify({ cmd: 'tp', x: myPlayerMesh.position.x + 1.5, y: myPlayerMesh.position.y, z: myPlayerMesh.position.z, by: myNick })
+                    method: 'PUT', body: JSON.stringify({ cmd: 'tp', x: player.x + 1.5, y: player.y, z: player.z, by: myNick })
                 });
                 addChat(`<span style="color:#f87171">[Admin]: Вы телепортировали ${target} к себе.</span>`);
             } else if (type === 'kick' && target && adminLevel >= 4) {
@@ -454,7 +521,7 @@
                 });
                 sendChatOnline(`<span style="color:#f87171">[A] Главный Админ ${myNick} выдал ${target} админку ${newLvl} уровня.</span>`);
             } else {
-                addChat(`<span style="color:#f87171">[Ошибка]: Укажите ник игрока или недостаточно прав (нужен выше уровень).</span>`);
+                addChat(`<span style="color:#f87171">[Ошибка]: Укажите ник игрока или недостаточно прав.</span>`);
             }
         }
 
@@ -478,9 +545,8 @@
                 await fetch(DB_URL + "/online/" + encodeURIComponent(myNick) + ".json", {
                     method: 'PUT',
                     body: JSON.stringify({
-                        x: myPlayerMesh.position.x, y: myPlayerMesh.position.y, z: myPlayerMesh.position.z,
-                        angle: myPlayerMesh.rotation.y, walk: walkTime, carMode: carMode, adminLevel: adminLevel,
-                        carX: myCarMesh.position.x, carZ: myCarMesh.position.z, carAng: myCarMesh.rotation.y, ts: Date.now()
+                        x: player.x, y: player.y, z: player.z, angle: player.angle, walk: player.walk,
+                        carMode: carMode, adminLevel: adminLevel, carX: myCar.x, carZ: myCar.z, carAng: myCar.angle, ts: Date.now()
                     })
                 });
                 const [pRes, cRes, cmdRes] = await Promise.all([
@@ -496,37 +562,16 @@
                         alert("Вы были кикнуты администратором " + cmdData.by);
                         location.reload();
                     } else if (cmdData.cmd === 'tp') {
-                        myPlayerMesh.position.set(cmdData.x, cmdData.y, cmdData.z);
+                        player.x = cmdData.x; player.y = cmdData.y; player.z = cmdData.z;
                         addChat(`<span style="color:#f87171">[Admin]: Администратор ${cmdData.by} телепортировал вас к себе.</span>`);
                     }
                 }
 
                 const pData = await pRes.json() || {};
                 const now = Date.now();
-                for (let k of Object.keys(remoteEntities)) {
-                    if (!pData[k] || now - pData[k].ts > 8000) {
-                        scene.remove(remoteEntities[k].human);
-                        scene.remove(remoteEntities[k].car);
-                        delete remoteEntities[k];
-                    }
-                }
+                remotePlayers = {};
                 for (let [k, v] of Object.entries(pData)) {
-                    if (k === myNick || !v || now - v.ts > 8000) continue;
-                    if (!remoteEntities[k]) {
-                        const h = createHumanModel(v.adminLevel || 0);
-                        const c = carTemplate ? carTemplate.clone() : createFallbackCar(0x10b981);
-                        attachDoors(c, 0x10b981);
-                        scene.add(h, c);
-                        remoteEntities[k] = { human: h, car: c, data: v };
-                    }
-                    const ent = remoteEntities[k];
-                    ent.data = v;
-                    ent.human.position.set(v.x, v.y, v.z);
-                    ent.human.rotation.y = v.angle;
-                    ent.human.visible = (v.carMode === "none");
-                    animateHuman(ent.human, v.walk || 0, v.y > 0.05);
-                    ent.car.position.set(v.carX, 0, v.carZ);
-                    ent.car.rotation.y = v.carAng;
+                    if (k !== myNick && v && now - v.ts < 8000) remotePlayers[k] = v;
                 }
 
                 const cData = await cRes.json();
@@ -560,8 +605,7 @@
         function resetJoystick(e) {
             for (let t of e.changedTouches) {
                 if (t.identifier === joyTouchId) {
-                    joyTouchId = null;
-                    joyX = 0; joyY = 0;
+                    joyTouchId = null; joyX = 0; joyY = 0;
                     joyStick.style.transform = `translate(0px, 0px)`;
                 }
             }
@@ -571,74 +615,67 @@
 
         function updateJoystick(touch) {
             const rect = joyZone.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            let dx = touch.clientX - cx;
-            let dy = touch.clientY - cy;
-            const maxR = 45;
-            const dist = Math.hypot(dx, dy);
-            if (dist > maxR) {
-                dx = (dx / dist) * maxR;
-                dy = (dy / dist) * maxR;
-            }
+            const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+            let dx = touch.clientX - cx, dy = touch.clientY - cy;
+            const maxR = 45, dist = Math.hypot(dx, dy);
+            if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
             joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
-            joyX = dx / maxR;
-            joyY = dy / maxR;
+            joyX = dx / maxR; joyY = dy / maxR;
         }
 
         let camTouchId = null, lastTouchX = 0, lastTouchY = 0;
-        renderer.domElement.addEventListener('touchstart', (e) => {
+        canvas.addEventListener('touchstart', (e) => {
             if (!started || chatOpen) return;
             const t = e.changedTouches.at(0);
-            camTouchId = t.identifier;
-            lastTouchX = t.clientX;
-            lastTouchY = t.clientY;
+            camTouchId = t.identifier; lastTouchX = t.clientX; lastTouchY = t.clientY;
         }, { passive: true });
 
-        renderer.domElement.addEventListener('touchmove', (e) => {
+        canvas.addEventListener('touchmove', (e) => {
             if (!started || chatOpen) return;
             for (let t of e.changedTouches) {
                 if (t.identifier === camTouchId) {
                     camYaw -= (t.clientX - lastTouchX) * 0.007;
                     camPitch = Math.max(-0.05, Math.min(1.15, camPitch + (t.clientY - lastTouchY) * 0.006));
-                    lastTouchX = t.clientX;
-                    lastTouchY = t.clientY;
+                    lastTouchX = t.clientX; lastTouchY = t.clientY;
                 }
             }
         }, { passive: true });
+
         function openMobileChat() {
             if (!started) return;
             chatOpen = true;
             if (document.exitPointerLock) document.exitPointerLock();
             const inp = document.getElementById('chat-input');
-            inp.style.display = 'block';
+            inp.classList.add('open');
             inp.focus();
+        }
+
+        function closeMobileChat() {
+            const inp = document.getElementById('chat-input');
+            inp.classList.remove('open');
+            chatOpen = false;
         }
 
         function toggleCar() {
             if (!started) return;
-            if (carMode === "none" && myPlayerMesh.position.distanceTo(myCarMesh.position) < 4.2) {
+            if (carMode === "none" && Math.hypot(player.x - myCar.x, player.z - myCar.z) < 4.2) {
                 carMode = "driver";
-                myPlayerMesh.visible = false;
-                triggerDoorAnim(myCarMesh, "L");
+                triggerDoor(myCar, "L");
                 sendChatOnline(`<span style="color:#f472b6">* ${myNick} открыл дверь и сел за руль</span>`);
             } else if (carMode !== "none") {
-                if (carMode === "driver") triggerDoorAnim(myCarMesh, "L");
+                if (carMode === "driver") triggerDoor(myCar, "L");
                 carMode = "none";
-                myPlayerMesh.visible = true;
-                myPlayerMesh.position.x -= 2.2;
+                player.x -= 2.2;
                 sendChatOnline(`<span style="color:#f472b6">* ${myNick} открыл дверь и вышел из машины</span>`);
             }
         }
 
         function tryPassenger() {
             if (!started || carMode !== "none") return;
-            for (let [rNick, ent] of Object.entries(remoteEntities)) {
-                if (myPlayerMesh.position.distanceTo(ent.car.position) < 4.5) {
+            for (let [rNick, rp] of Object.entries(remotePlayers)) {
+                if (Math.hypot(player.x - rp.carX, player.z - rp.carZ) < 4.5) {
                     carMode = "passenger";
                     hostNick = rNick;
-                    myPlayerMesh.visible = false;
-                    triggerDoorAnim(ent.car, "R");
                     sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел пассажиром к ${rNick}</span>`);
                     break;
                 }
@@ -647,37 +684,25 @@
 
         function doJump() {
             if (!started || carMode !== "none") return;
-            if (adminFly) {
-                myPlayerMesh.position.y += 1.5;
-            } else if (myPlayerMesh.position.y <= 0.01) {
-                vy = 0.18;
-            }
+            if (adminFly) player.y += 1.5;
+            else if (player.y <= 0.01) player.vy = 0.18;
         }
 
-        renderer.domElement.addEventListener('mousedown', () => {
-            dragging = true;
-            if (started && !chatOpen && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock();
-        });
+        canvas.addEventListener('mousedown', () => { dragging = true; if (started && !chatOpen && canvas.requestPointerLock) canvas.requestPointerLock(); });
         window.addEventListener('mouseup', () => { dragging = false; });
         window.addEventListener('mousemove', (e) => {
             if (!started || chatOpen) return;
-            if (document.pointerLockElement === renderer.domElement || dragging) {
+            if (document.pointerLockElement === canvas || dragging) {
                 camYaw -= e.movementX * 0.005;
                 camPitch = Math.max(-0.05, Math.min(1.15, camPitch + e.movementY * 0.004));
             }
         });
-        window.addEventListener('wheel', (e) => {
-            if (started) camDist = Math.max(2.5, Math.min(15, camDist + e.deltaY * 0.005));
-        });
+        window.addEventListener('wheel', (e) => { if (started) camDist = Math.max(2.5, Math.min(15, camDist + e.deltaY * 0.005)); });
 
         const keys = {};
         window.addEventListener('keydown', (e) => {
             if (!started) return;
-            if (e.code === 'KeyT' && !chatOpen) {
-                e.preventDefault();
-                openMobileChat();
-                return;
-            }
+            if (e.code === 'KeyT' && !chatOpen) { e.preventDefault(); openMobileChat(); return; }
             if (chatOpen) {
                 if (e.code === 'Enter') {
                     const inp = document.getElementById('chat-input');
@@ -688,35 +713,23 @@
                         sendChatOnline(formatted);
                     }
                     inp.value = '';
-                    inp.style.display = 'none';
-                    chatOpen = false;
-                } else if (e.code === 'Escape') {
-                    document.getElementById('chat-input').style.display = 'none';
-                    chatOpen = false;
-                }
+                    closeMobileChat();
+                } else if (e.code === 'Escape') { closeMobileChat(); }
                 return;
             }
-
             if (e.code === 'KeyF') toggleCar();
             if (e.code === 'KeyG') tryPassenger();
             if (e.code === 'Space') doJump();
             keys[e.code] = true;
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-        function animate() {
-            requestAnimationFrame(animate);
+        function loop() {
+            requestAnimationFrame(loop);
 
-            // Плавная анимация открытия и закрытия дверей у всех машин
-            const updateDoors = (carGrp) => {
-                if (!carGrp.userData.doorL) return;
-                carGrp.userData.doorL.rotation.y += (carGrp.userData.doorLTarget - carGrp.userData.doorL.rotation.y) * 0.15;
-                carGrp.userData.doorR.rotation.y += (carGrp.userData.doorRTarget - carGrp.userData.doorR.rotation.y) * 0.15;
-            };
-            updateDoors(myCarMesh);
-            for (let ent of Object.values(remoteEntities)) updateDoors(ent.car);
+            myCar.doorL += (myCar.doorLT - myCar.doorL) * 0.15;
+            myCar.doorR += (myCar.doorRT - myCar.doorR) * 0.15;
 
             if (started && !chatOpen) {
-                // Объединяем ввод с клавиатуры (WASD) и мобильного стика (joyX, joyY)
                 let moveForward = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0) - joyY;
                 let moveRight = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0) + joyX;
 
@@ -730,78 +743,77 @@
                     if (len > 0.05) {
                         const norm = Math.min(1, len);
                         const spd = (keys['ShiftLeft'] || adminFly) ? 0.22 : 0.095 * norm;
-                        myPlayerMesh.position.x += (dx / len) * spd;
-                        myPlayerMesh.position.z += (dz / len) * spd;
-                        myPlayerMesh.rotation.y = Math.atan2(dx, dz);
-                        walkTime += spd * 0.65;
-                    } else {
-                        walkTime = 0;
-                    }
+                        player.x += (dx / len) * spd;
+                        player.z += (dz / len) * spd;
+                        player.angle = Math.atan2(dx, dz);
+                        player.walk += spd * 0.65;
+                    } else player.walk = 0;
 
                     if (adminFly) {
-                        if (keys['Space']) myPlayerMesh.position.y += 0.15;
-                        if (keys['KeyC'] || keys['ControlLeft']) myPlayerMesh.position.y = Math.max(0, myPlayerMesh.position.y - 0.15);
+                        if (keys['Space']) player.y += 0.15;
+                        if (keys['KeyC'] || keys['ControlLeft']) player.y = Math.max(0, player.y - 0.15);
                     } else {
-                        myPlayerMesh.position.y += vy;
-                        if (myPlayerMesh.position.y > 0) vy -= 0.010;
-                        else { myPlayerMesh.position.y = 0; vy = 0; }
+                        player.y += player.vy;
+                        if (player.y > 0) player.vy -= 0.010;
+                        else { player.y = 0; player.vy = 0; }
                     }
-
-                    animateHuman(myPlayerMesh, walkTime, myPlayerMesh.position.y > 0.05 && !adminFly);
                 } else if (carMode === "driver") {
-                    if (moveForward > 0.1) carSpeed = Math.min(carSpeed + 0.018 * moveForward, 0.75);
-                    else if (moveForward < -0.1) carSpeed = Math.max(carSpeed + 0.018 * moveForward, -0.35);
-                    else carSpeed *= 0.96;
+                    if (moveForward > 0.1) myCar.speed = Math.min(myCar.speed + 0.018 * moveForward, 0.75);
+                    else if (moveForward < -0.1) myCar.speed = Math.max(myCar.speed + 0.018 * moveForward, -0.35);
+                    else myCar.speed *= 0.96;
 
-                    if (Math.abs(carSpeed) > 0.01) {
-                        const dir = carSpeed > 0 ? 1 : -1;
-                        if (Math.abs(moveRight) > 0.1) myCarMesh.rotation.y -= 0.04 * dir * moveRight;
+                    if (Math.abs(myCar.speed) > 0.01) {
+                        const dir = myCar.speed > 0 ? 1 : -1;
+                        if (Math.abs(moveRight) > 0.1) myCar.angle -= 0.04 * dir * moveRight;
                     }
-                    myCarMesh.position.x += Math.sin(myCarMesh.rotation.y) * carSpeed;
-                    myCarMesh.position.z += Math.cos(myCarMesh.rotation.y) * carSpeed;
-                    myPlayerMesh.position.copy(myCarMesh.position);
+                    myCar.x += Math.sin(myCar.angle) * myCar.speed;
+                    myCar.z += Math.cos(myCar.angle) * myCar.speed;
+                    player.x = myCar.x; player.z = myCar.z;
                 } else if (carMode === "passenger") {
-                    const host = remoteEntities[hostNick];
-                    if (host) {
-                        myPlayerMesh.position.copy(host.car.position);
-                    } else {
-                        carMode = "none";
-                        myPlayerMesh.visible = true;
-                    }
+                    const host = remotePlayers[hostNick];
+                    if (host) { player.x = host.carX; player.z = host.carZ; }
+                    else carMode = "none";
                 }
             }
 
-            const targetPos = carMode === "driver" ? myCarMesh.position : myPlayerMesh.position;
-            const ty = carMode !== "none" ? 1.1 : targetPos.y + 1.35;
+            const tx = carMode === "driver" ? myCar.x : player.x;
+            const ty = carMode !== "none" ? 1.1 : player.y + 1.35;
+            const tz = carMode === "driver" ? myCar.z : player.z;
             const d = carMode !== "none" ? camDist + 2.5 : camDist;
-            camera.position.set(
-                targetPos.x + Math.sin(camYaw) * Math.cos(camPitch) * d,
-                ty + Math.sin(camPitch) * d,
-                targetPos.z + Math.cos(camYaw) * Math.cos(camPitch) * d
-            );
-            camera.lookAt(targetPos.x, ty, targetPos.z);
+            const eyeX = tx + Math.sin(camYaw) * Math.cos(camPitch) * d;
+            const eyeY = ty + Math.sin(camPitch) * d;
+            const eyeZ = tz + Math.cos(camYaw) * Math.cos(camPitch) * d;
+
+            gl.clearColor(0.55, 0.78, 0.96, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            setCamera(eyeX, eyeY, eyeZ, tx, ty, tz);
+
+            drawBox(0, -0.1, 0, 200, 0.2, 200, 0, texGrid, 1, 1, 1, 50);
+            drawDetailedCar(myCar.x, myCar.z, myCar.angle, 0.55, 0.2, 0.9, myCar.doorL, myCar.doorR);
+            extraCars.forEach(ec => drawDetailedCar(ec.x, ec.z, ec.angle, 0.85, 0.15, 0.15, 0, 0));
+
+            if (carMode === "none") drawHuman(player.x, player.y, player.z, player.angle, player.walk, adminLevel);
 
             const labels = document.getElementById('labels-layer');
             labels.innerHTML = "";
-            for (let [rNick, ent] of Object.entries(remoteEntities)) {
-                const headVec = ent.human.position.clone();
-                headVec.y += 2.15;
-                headVec.project(camera);
-                if (headVec.z < 1) {
+            for (let [rNick, rp] of Object.entries(remotePlayers)) {
+                drawDetailedCar(rp.carX, rp.carZ, rp.carAng, 0.15, 0.65, 0.45, 0, 0);
+                if (rp.carMode === "none") drawHuman(rp.x, rp.y, rp.z, rp.angle, rp.walk || 0, rp.adminLevel || 0);
+
+                const pos = toScreen(rp.x, rp.y + 2.15, rp.z);
+                if (pos) {
                     const tag = document.createElement('div');
                     tag.className = 'player-tag';
-                    tag.style.left = (headVec.x * 0.5 + 0.5) * window.innerWidth + 'px';
-                    tag.style.top = (-headVec.y * 0.5 + 0.5) * window.innerHeight + 'px';
-                    const admPrefix = ent.data.adminLevel > 0 ? `[ADM ${ent.data.adminLevel}] ` : "";
-                    tag.innerText = admPrefix + rNick + (ent.data.carMode === "driver" ? " [За рулём]" : "");
-                    if (ent.data.adminLevel > 0) tag.style.color = "#fca5a5";
+                    tag.style.left = pos.x + 'px';
+                    tag.style.top = pos.y + 'px';
+                    const admPrefix = rp.adminLevel > 0 ? `[ADM ${rp.adminLevel}] ` : "";
+                    tag.innerText = admPrefix + rNick + (rp.carMode === "driver" ? " [За рулём]" : "");
+                    if (rp.adminLevel > 0) tag.style.color = "#fca5a5";
                     labels.appendChild(tag);
                 }
             }
-
-            renderer.render(scene, camera);
         }
-        animate();
+        loop();
     </script>
 </body>
 </html>
