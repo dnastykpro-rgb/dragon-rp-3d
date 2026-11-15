@@ -99,8 +99,8 @@
             <input type="text" id="chat-input" placeholder="Написать в чат или /me...">
         </div>
         <div id="hint">
-            <b>WASD</b> — Движение | <b>Shift</b> — Бег | <b>T</b> — Онлайн-чат<br>
-            <b>F</b> — Сесть за руль | <b>G</b> — Сесть пассажиром к игроку | <b>H</b> — Пожать руку игроку рядом
+            <b>WASD</b> — Движение | <b>Shift</b> — Бег | <b>Пробел</b> — Прыжок | <b>T</b> — Чат<br>
+            <b>F</b> — Сесть за руль | <b>G</b> — Пассажиром к игроку | <b>H</b> — Пожать руку
         </div>
     </div>
 
@@ -218,7 +218,7 @@
         const DB_URL = "https://" + "test-83342-default-rtdb" + ".firebaseio.com";
 
         let myNick = "", started = false, chatOpen = false;
-        let camYaw = 0, camPitch = 0.25, camDist = 4.5, dragging = false;
+        let camYaw = 0, camPitch = 0.25, camDist = 4.2, dragging = false;
         let carMode = "none";
         let hostNick = "";
         let lastProj = null, lastView = null;
@@ -290,7 +290,7 @@
                 await fetch(DB_URL + "/online/" + encodeURIComponent(myNick) + ".json", {
                     method: 'PUT',
                     body: JSON.stringify({
-                        x: player.x, y: player.y, z: player.z, angle: player.angle,
+                        x: player.x, y: player.y, z: player.z, angle: player.angle, walk: player.walk,
                         carMode: carMode, carX: myCar.x, carZ: myCar.z, carAng: myCar.angle, ts: Date.now()
                     })
                 });
@@ -404,16 +404,98 @@
             return { x: (px / pw * 0.5 + 0.5) * W, y: (-py / pw * 0.5 + 0.5) * H };
         }
         function drawHuman(hx, hy, hz, ang, walk, r, g, b) {
-            const swing = Math.sin(walk) * 0.4, bob = Math.abs(Math.cos(walk)) * 0.03;
+            const isAir = hy > 0.04;
+            const isMoving = walk > 0.01 && !isAir;
+            const cycle = walk;
+            const bob = isMoving ? Math.abs(Math.cos(cycle)) * 0.025 : Math.sin(Date.now() * 0.0025) * 0.008;
+
             const pc = Math.cos(ang), ps = Math.sin(ang);
-            const p = (ox, oy, oz, sx, sy, sz, rx, cr, cg, cb) => drawPart(hx + ox*pc + oz*ps, hy + bob + oy, hz - ox*ps + oz*pc, sx, sy, sz, ang, rx, cr, cg, cb);
-            p(0, 1.68, 0, 0.24, 0.27, 0.25, 0, 0.92, 0.74, 0.62);
-            p(0, 1.73, -0.02, 0.25, 0.22, 0.26, 0, 0.15, 0.12, 0.1);
-            p(0, 1.25, 0, 0.42, 0.58, 0.24, 0, r, g, b);
-            p(-0.26, 1.25, -Math.sin(swing)*0.15, 0.12, 0.52, 0.12, -swing, r, g, b);
-            p(0.26, 1.25, Math.sin(swing)*0.15, 0.12, 0.52, 0.12, swing, r, g, b);
-            p(-0.11, 0.55, Math.sin(swing)*0.18, 0.15, 0.72, 0.16, swing, 0.14, 0.18, 0.26);
-            p(0.11, 0.55, -Math.sin(swing)*0.18, 0.15, 0.72, 0.16, -swing, 0.14, 0.18, 0.26);
+            const p = (ox, oy, oz, sx, sy, sz, rx, cr, cg, cb) => {
+                drawPart(hx + ox * pc + oz * ps, hy + bob + oy, hz - ox * ps + oz * pc, sx, sy, sz, ang, rx, cr, cg, cb);
+            };
+
+            const skin = [0.76, 0.56, 0.44];
+            const beard = [0.12, 0.09, 0.08];
+            const hoodie = [r, g, b];
+            const whiteTee = [0.92, 0.92, 0.94];
+            const jeans = [0.09, 0.10, 0.13];
+            const glove = [0.08, 0.08, 0.09];
+            const shoes = [0.95, 0.95, 0.97];
+
+            let lean = isAir ? 0.14 : (isMoving ? 0.08 : 0.0);
+            let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0;
+            let shL = 0, shR = 0, elbL = 0.25, elbR = 0.25;
+
+            if (isAir) {
+                hipL = -0.45; kneeL = 0.75;
+                hipR = -0.15; kneeR = 0.45;
+                shL = -0.25;  elbL = 0.85;
+                shR = 0.20;   elbR = 0.75;
+            } else if (isMoving) {
+                hipL = Math.sin(cycle) * 0.48;
+                hipR = -Math.sin(cycle) * 0.48;
+                kneeL = Math.max(0, -Math.sin(cycle - 0.5)) * 0.85 + 0.12;
+                kneeR = Math.max(0, Math.sin(cycle - 0.5)) * 0.85 + 0.12;
+
+                shL = -Math.sin(cycle) * 0.42;
+                shR = Math.sin(cycle) * 0.42;
+                elbL = 0.35 + Math.max(0, Math.sin(cycle)) * 0.55;
+                elbR = 0.35 + Math.max(0, -Math.sin(cycle)) * 0.55;
+            } else {
+                shL = Math.sin(Date.now() * 0.0025) * 0.03;
+                shR = -shL;
+            }
+
+            const headZ = 0.02 + Math.sin(lean) * 0.25;
+            p(0, 1.72, headZ, 0.22, 0.26, 0.23, 0, skin.at(0), skin.at(1), skin.at(2));
+            p(0, 1.65, headZ + 0.06, 0.16, 0.12, 0.14, 0, beard.at(0), beard.at(1), beard.at(2));
+            p(-0.045, 1.74, headZ + 0.10, 0.028, 0.02, 0.02, 0, 0.08, 0.08, 0.08);
+            p(0.045, 1.74, headZ + 0.10, 0.028, 0.02, 0.02, 0, 0.08, 0.08, 0.08);
+            p(0, 1.74, headZ - 0.04, 0.285, 0.31, 0.29, -0.05, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+            p(0, 1.56, headZ, 0.16, 0.16, 0.16, 0, whiteTee.at(0), whiteTee.at(1), whiteTee.at(2));
+
+            p(0, 1.37, Math.sin(lean) * 0.14, 0.48, 0.38, 0.27, lean, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+            p(0, 1.15, Math.sin(lean) * 0.06, 0.42, 0.32, 0.25, lean, hoodie.at(0) * 0.95, hoodie.at(1) * 0.95, hoodie.at(2) * 0.95);
+            p(0, 0.98, 0, 0.40, 0.12, 0.24, 0, whiteTee.at(0), whiteTee.at(1), whiteTee.at(2));
+            p(0, 0.91, 0, 0.38, 0.08, 0.23, 0, 0.1, 0.1, 0.11);
+
+            const drawArm = (side, shAng, elbAng) => {
+                const ox = side * 0.27;
+                const shY = 1.41, shZ = Math.sin(lean) * 0.16;
+                const upperLen = 0.28, foreLen = 0.26;
+                const elbY = shY - Math.cos(shAng) * upperLen;
+                const elbZ = shZ - Math.sin(shAng) * upperLen;
+                const foreAng = shAng - elbAng;
+                const handY = elbY - Math.cos(foreAng) * foreLen;
+                const handZ = elbZ - Math.sin(foreAng) * foreLen;
+
+                p(ox, shY, shZ, 0.15, 0.15, 0.15, 0, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+                p(ox * 1.04, (shY + elbY) * 0.5, (shZ + elbZ) * 0.5, 0.135, upperLen + 0.06, 0.135, shAng, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+                p(ox * 1.04, elbY, elbZ, 0.12, 0.12, 0.12, 0, hoodie.at(0), hoodie.at(1), hoodie.at(2));
+                p(ox * 1.05, (elbY + handY) * 0.5, (elbZ + handZ) * 0.5, 0.115, foreLen + 0.04, 0.115, foreAng, hoodie.at(0) * 0.95, hoodie.at(1) * 0.95, hoodie.at(2) * 0.95);
+                p(ox * 1.05, handY, handZ, 0.10, 0.13, 0.10, foreAng, glove.at(0), glove.at(1), glove.at(2));
+                p(ox * 1.05, handY, handZ + 0.035, 0.08, 0.07, 0.05, foreAng, 0.85, 0.85, 0.88);
+            };
+            drawArm(-1, shL, elbL);
+            drawArm(1, shR, elbR);
+
+            const drawLeg = (side, hipAng, kneeAng) => {
+                const ox = side * 0.115;
+                const hipY = 0.88, hipZ = 0;
+                const thighLen = 0.40, shinLen = 0.38;
+                const kneeY = hipY - Math.cos(hipAng) * thighLen;
+                const kneeZ = hipZ - Math.sin(hipAng) * thighLen;
+                const shinAng = hipAng + kneeAng;
+                const ankleY = kneeY - Math.cos(shinAng) * shinLen;
+                const ankleZ = kneeZ - Math.sin(shinAng) * shinLen;
+
+                p(ox, (hipY + kneeY) * 0.5, (hipZ + kneeZ) * 0.5, 0.21, thighLen + 0.08, 0.22, hipAng, jeans.at(0), jeans.at(1), jeans.at(2));
+                p(ox, kneeY, kneeZ, 0.18, 0.16, 0.18, 0, jeans.at(0), jeans.at(1), jeans.at(2));
+                p(ox, (kneeY + ankleY) * 0.5, (kneeZ + ankleZ) * 0.5, 0.19, shinLen + 0.06, 0.20, shinAng, jeans.at(0), jeans.at(1), jeans.at(2));
+                p(ox, ankleY - 0.03, ankleZ + 0.06, 0.16, 0.13, 0.30, 0, shoes.at(0), shoes.at(1), shoes.at(2));
+            };
+            drawLeg(-1, hipL, kneeL);
+            drawLeg(1, hipR, kneeR);
         }
 
         function loop() {
@@ -430,14 +512,14 @@
                     if (keys['KeyA']) { dx -= rightX; dz -= rightZ; }
                     const len = Math.hypot(dx, dz);
                     if (len > 0) {
-                        const spd = keys['ShiftLeft'] ? 0.22 : 0.11;
+                        const spd = keys['ShiftLeft'] ? 0.18 : 0.095;
                         player.x += (dx / len) * spd; player.z += (dz / len) * spd;
-                        player.angle = Math.atan2(dx, dz); player.walk += spd * 1.4;
+                        player.angle = Math.atan2(dx, dz); player.walk += spd * 0.65;
                     } else player.walk = 0;
 
-                    if (keys['Space'] && player.y <= 0.01) player.vy = 0.2;
+                    if (keys['Space'] && player.y <= 0.01) player.vy = 0.18;
                     player.y += player.vy;
-                    if (player.y > 0) player.vy -= 0.012; else { player.y = 0; player.vy = 0; }
+                    if (player.y > 0) player.vy -= 0.010; else { player.y = 0; player.vy = 0; }
                 } else if (carMode === "driver") {
                     if (keys['KeyW']) myCar.speed = Math.min(myCar.speed + 0.018, 0.75);
                     else if (keys['KeyS']) myCar.speed = Math.max(myCar.speed - 0.018, -0.35);
@@ -472,13 +554,13 @@
 
             drawBox(0, -0.1, 0, 200, 0.2, 200, 0, texGrid, 1, 1, 1, 50);
             drawDetailedCar(myCar.x, myCar.z, myCar.angle, 0.55, 0.2, 0.9);
-            if (carMode === "none") drawHuman(player.x, player.y, player.z, player.angle, player.walk, 0.15, 0.28, 0.55);
+            if (carMode === "none") drawHuman(player.x, player.y, player.z, player.angle, player.walk, 0.14, 0.16, 0.22);
 
             const labels = document.getElementById('labels-layer');
             labels.innerHTML = "";
             for (let [rNick, rp] of Object.entries(remotePlayers)) {
                 drawDetailedCar(rp.carX, rp.carZ, rp.carAng, 0.15, 0.65, 0.45);
-                if (rp.carMode === "none") drawHuman(rp.x, rp.y, rp.z, rp.angle, 0, 0.85, 0.25, 0.25);
+                if (rp.carMode === "none") drawHuman(rp.x, rp.y, rp.z, rp.angle, rp.walk || 0, 0.28, 0.14, 0.18);
 
                 const pos = toScreen(rp.x, rp.y + 2.15, rp.z);
                 if (pos) {
