@@ -2,148 +2,105 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>RADMIR WEBGL RP — Launcher</title>
+    <title>Test Server 3D Online</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; }
-        body { overflow: hidden; background: #090d16; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        body { overflow: hidden; background: #0b0f19; }
         canvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
         canvas:active { cursor: grabbing; }
 
-        #launcher-screen {
+        #launcher {
             position: fixed; inset: 0; z-index: 100;
-            background: radial-gradient(circle at 75% 25%, #2e1065 0%, #0f172a 48%, #060913 100%);
-            display: flex; flex-direction: column; justify-content: space-between; padding: 36px;
-            transition: opacity 0.6s ease, transform 0.6s ease;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #090d16 100%);
+            transition: opacity 0.4s ease;
         }
-        #launcher-screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.03); }
+        #launcher.hidden { opacity: 0; pointer-events: none; }
 
-        .top-left-nick {
-            position: absolute; top: 32px; left: 32px;
-            background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px);
-            border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 18px;
-            padding: 14px 20px; width: 310px; box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+        .auth-panel {
+            position: absolute; top: 28px; left: 28px;
+            background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 18px; padding: 18px 20px; width: 300px;
         }
-        .top-left-nick label {
-            display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-            color: #c084fc; font-weight: 700; margin-bottom: 6px;
+        .auth-panel label { display: block; font-size: 11px; color: #c084fc; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
+        .auth-panel input {
+            width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+            padding: 10px 12px; color: white; font-size: 14px; outline: none; margin-bottom: 12px;
         }
-        .top-left-nick input {
-            width: 100%; background: rgba(30, 41, 59, 0.9); border: 1px solid #334155;
-            border-radius: 10px; padding: 10px 14px; color: white; font-size: 15px; font-weight: 600; outline: none;
+        .auth-panel input:focus { border-color: #a855f7; }
+        #auth-msg { color: #f87171; font-size: 12px; min-height: 16px; }
+        .play-panel {
+            position: absolute; bottom: 28px; right: 28px;
+            display: flex; align-items: center; gap: 12px;
+            background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px; padding: 12px 16px;
         }
-        .top-left-nick input:focus { border-color: #a855f7; }
-        #nick-error { color: #f87171; font-size: 12px; margin-top: 6px; min-height: 16px; }
-        .launcher-center { margin: auto; text-align: center; pointer-events: none; }
-        .launcher-center h1 {
-            font-size: 54px; font-weight: 900; letter-spacing: 2px;
-            background: linear-gradient(135deg, #ffffff 0%, #c084fc 50%, #6366f1 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .launcher-center p { color: #94a3b8; font-size: 16px; margin-top: 8px; }
-
-        .bottom-right-controls {
-            position: absolute; bottom: 32px; right: 32px;
-            display: flex; align-items: center; gap: 14px;
-            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px);
-            padding: 14px 18px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .bottom-right-controls select {
+        .play-panel select {
             background: #1e293b; color: white; border: 1px solid #334155;
-            padding: 15px 18px; border-radius: 14px; font-size: 15px; font-weight: 600; outline: none; min-width: 240px;
+            padding: 14px 16px; border-radius: 12px; font-size: 15px; font-weight: 600; outline: none;
         }
-        .bottom-right-controls button {
-            background: linear-gradient(135deg, #9333ea 0%, #4f46e5 100%);
-            color: white; border: none; padding: 15px 38px; border-radius: 14px;
-            font-size: 17px; font-weight: 800; letter-spacing: 1px; cursor: pointer;
+        .play-panel button {
+            background: linear-gradient(135deg, #9333ea, #4f46e5); color: white; border: none;
+            padding: 14px 34px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer;
         }
-
-        #loading-screen {
-            position: fixed; inset: 0; z-index: 150; background: #070a12;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.45s ease;
-        }
-        #loading-screen.active { opacity: 1; pointer-events: auto; }
-        .spinner-ring {
-            width: 68px; height: 68px; border-radius: 50%;
-            border: 4px solid rgba(168, 85, 247, 0.15); border-top-color: #a855f7; border-right-color: #6366f1;
-            animation: spin 0.9s linear infinite; margin-bottom: 24px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-title { color: white; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-        #loading-status { color: #94a3b8; font-size: 14px; margin-bottom: 22px; }
-        .progress-track { width: 360px; height: 8px; background: #1e293b; border-radius: 99px; overflow: hidden; }
-        #progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #a855f7, #38bdf8); transition: width 0.15s ease-out; }
+        .play-panel button:hover { filter: brightness(1.15); }
 
         #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
-        #chat-container { position: absolute; top: 20px; left: 20px; width: 430px; pointer-events: auto; }
-        #chat-messages {
-            background: rgba(15, 23, 42, 0.72); border-radius: 16px; padding: 14px;
-            height: 185px; overflow-y: auto; color: white; font-size: 14px; line-height: 1.45;
-            display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.12);
+        #badge {
+            position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.78);
+            color: #c084fc; padding: 10px 16px; border-radius: 12px; font-weight: bold; font-size: 14px;
+        }
+        #chat-box { position: absolute; top: 20px; left: 20px; width: 410px; pointer-events: auto; }
+        #chat-log {
+            background: rgba(15, 23, 42, 0.68); border-radius: 14px; padding: 12px;
+            height: 170px; overflow-y: auto; color: white; font-size: 13px; line-height: 1.45;
+            display: flex; flex-direction: column; justify-content: flex-end;
         }
         #chat-input {
-            display: none; width: 100%; margin-top: 8px; padding: 11px 15px; border-radius: 12px;
+            display: none; width: 100%; margin-top: 6px; padding: 10px 14px; border-radius: 10px;
             border: 1px solid #a855f7; background: #0f172a; color: white; font-size: 14px; outline: none;
         }
-        #server-info {
-            position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.78);
-            padding: 12px 18px; border-radius: 16px; text-align: right; border: 1px solid rgba(255,255,255,0.12);
-        }
-        #server-badge { color: #c084fc; font-weight: bold; font-size: 15px; }
-        #money-badge { color: #4ade80; font-weight: bold; font-size: 18px; margin-top: 4px; }
-        #location-badge { color: #cbd5e1; font-size: 13px; margin-top: 4px; }
-        #controls-hint {
+        #hint {
             position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.78);
-            color: #e2e8f0; padding: 12px 18px; border-radius: 16px; font-size: 13px; line-height: 1.6;
+            color: #e2e8f0; padding: 12px 16px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+        }
+        #labels-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+        .player-tag {
+            position: absolute; transform: translate(-50%, -100%);
+            background: rgba(0,0,0,0.6); color: white; padding: 3px 8px; border-radius: 6px;
+            font-size: 12px; font-weight: bold; white-space: nowrap;
         }
     </style>
 </head>
 <body>
 
-    <div id="launcher-screen">
-        <div class="top-left-nick">
-            <label for="nick-input">Ваш игровой ник</label>
+    <div id="launcher">
+        <div class="auth-panel">
+            <label>Игровой ник</label>
             <input type="text" id="nick-input" placeholder="Например: Domik_Brane" maxlength="20">
-            <div id="nick-error"></div>
+            <label>Пароль от аккаунта</label>
+            <input type="password" id="pass-input" placeholder="Придумайте или введите пароль" maxlength="32">
+            <div id="auth-msg"></div>
         </div>
-
-        <div class="launcher-center">
-            <h1>RADMIR WEB RP</h1>
-            <p>Официальный веб-лаунчер • 3D WebGL Engine</p>
-        </div>
-
-        <div class="bottom-right-controls">
+        <div class="play-panel">
             <select id="server-select">
-                <option value="Server #01 | Арзамас">Server #01 | Арзамас (Онлайн: 418)</option>
-                <option value="Server #02 | Южный">Server #02 | Южный (Онлайн: 295)</option>
-                <option value="Server #03 | Dev Test">Server #03 | Dev Test (Онлайн: 12)</option>
+                <option value="Test Server #1">Test Server #1 (Онлайн)</option>
             </select>
-            <button onclick="launchGame()">ИГРАТЬ</button>
+            <button onclick="loginAndPlay()">ВОЙТИ В ИГРУ</button>
         </div>
     </div>
 
-    <div id="loading-screen">
-        <div class="spinner-ring"></div>
-        <div class="loading-title" id="loading-server-name">Подключение к серверу...</div>
-        <div id="loading-status">Инициализация 3D-движка WebGL...</div>
-        <div class="progress-track">
-            <div id="progress-fill"></div>
-        </div>
-    </div>
+    <div id="labels-layer"></div>
 
     <div id="hud">
-        <div id="server-info">
-            <div id="server-badge">Server #01 | Арзамас</div>
-            <div id="money-badge">50 000 ₽</div>
-            <div id="location-badge">Район: Центральный проспект</div>
+        <div id="badge">Test Server #1</div>
+        <div id="chat-box">
+            <div id="chat-log"></div>
+            <input type="text" id="chat-input" placeholder="Написать в чат или /me...">
         </div>
-        <div id="chat-container">
-            <div id="chat-messages"></div>
-            <input type="text" id="chat-input" placeholder="Сообщение или команды: /me, /do, /n, /gps...">
-        </div>
-        <div id="controls-hint">
-            <b>WASD</b> — Ходьба / Езда | <b>Shift</b> — Бег | <b>Пробел</b> — Прыжок<br>
-            <b>F</b> — Сесть / Выйти из машины | <b>T</b> — Чат | <b>Мышь</b> — Вращать камеру
+        <div id="hint">
+            <b>WASD</b> — Движение | <b>Shift</b> — Бег | <b>T</b> — Онлайн-чат<br>
+            <b>F</b> — Сесть за руль | <b>G</b> — Сесть пассажиром к игроку | <b>H</b> — Пожать руку игроку рядом
         </div>
     </div>
 
@@ -152,568 +109,386 @@
         const canvas = document.getElementById('glCanvas');
         const gl = canvas.getContext('webgl');
         let W, H;
-        function resize() {
-            W = canvas.width = window.innerWidth;
-            H = canvas.height = window.innerHeight;
-            gl.viewport(0, 0, W, H);
-        }
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; gl.viewport(0, 0, W, H); }
         window.addEventListener('resize', resize);
         resize();
 
-        const vsSrc = `
-            attribute vec3 aPos;
-            attribute vec3 aNorm;
-            attribute vec2 aUV;
-            uniform mat4 uProj;
-            uniform mat4 uView;
-            uniform mat4 uModel;
-            uniform vec2 uUVScale;
-            varying vec3 vNorm;
-            varying vec2 vUV;
-            varying float vDist;
+        const vs = `
+            attribute vec3 aPos, aNorm; attribute vec2 aUV;
+            uniform mat4 uProj, uView, uModel; uniform vec2 uUVScale;
+            varying vec3 vNorm; varying vec2 vUV;
             void main() {
-                vec4 worldPos = uModel * vec4(aPos, 1.0);
-                vec4 viewPos = uView * worldPos;
-                gl_Position = uProj * viewPos;
-                vNorm = mat3(uModel) * aNorm;
-                vUV = aUV * uUVScale;
-                vDist = -viewPos.z;
+                gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+                vNorm = mat3(uModel) * aNorm; vUV = aUV * uUVScale;
             }
         `;
-        const fsSrc = `
+        const fs = `
             precision mediump float;
-            varying vec3 vNorm;
-            varying vec2 vUV;
-            varying float vDist;
-            uniform sampler2D uTex;
-            uniform vec3 uTint;
+            varying vec3 vNorm; varying vec2 vUV;
+            uniform sampler2D uTex; uniform vec3 uTint;
             void main() {
-                vec3 sunDir = normalize(vec3(0.5, 0.85, 0.4));
-                float light = max(dot(normalize(vNorm), sunDir), 0.0) * 0.65 + 0.45;
-                vec4 texCol = texture2D(uTex, vUV);
-                vec3 col = texCol.rgb * uTint * light;
-                float fog = clamp((vDist - 55.0) / 150.0, 0.0, 1.0);
-                col = mix(col, vec3(0.53, 0.81, 0.98), fog);
-                gl_FragColor = vec4(col, 1.0);
+                vec3 sun = normalize(vec3(0.4, 0.9, 0.3));
+                float light = max(dot(normalize(vNorm), sun), 0.0) * 0.6 + 0.45;
+                gl_FragColor = vec4(texture2D(uTex, vUV).rgb * uTint * light, 1.0);
             }
         `;
-
-        function compileShader(type, src) {
-            const s = gl.createShader(type);
-            gl.shaderSource(s, src);
-            gl.compileShader(s);
-            return s;
-        }
+        function makeShader(t, s) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; }
         const prog = gl.createProgram();
-        gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSrc));
-        gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSrc));
-        gl.linkProgram(prog);
-        gl.useProgram(prog);
-        gl.enable(gl.DEPTH_TEST);
+        gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, vs));
+        gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, fs));
+        gl.linkProgram(prog); gl.useProgram(prog); gl.enable(gl.DEPTH_TEST);
 
-        function createGLTexture(type) {
-            const c = document.createElement('canvas');
-            c.width = 128; c.height = 128;
+        function createTex(grid) {
+            const c = document.createElement('canvas'); c.width = 128; c.height = 128;
             const g = c.getContext('2d');
-
-            if (type === 'asphalt') {
-                g.fillStyle = '#262b34'; g.fillRect(0, 0, 128, 128);
-                for (let i = 0; i < 600; i++) {
-                    g.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.3)';
-                    g.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
-                }
-            } else if (type === 'grass') {
-                g.fillStyle = '#3b6625'; g.fillRect(0, 0, 128, 128);
-                for (let i = 0; i < 500; i++) {
-                    g.fillStyle = i % 2 === 0 ? '#4a7c31' : '#2d4f1c';
-                    g.fillRect(Math.random() * 128, Math.random() * 128, 3, 3);
-                }
-            } else if (type === 'windows') {
-                g.fillStyle = '#cbd5e1'; g.fillRect(0, 0, 128, 128);
-                g.fillStyle = '#0f172a';
-                for (let y = 12; y < 116; y += 38) {
-                    for (let x = 12; x < 116; x += 38) {
-                        g.fillRect(x, y, 24, 26);
-                        g.fillStyle = '#38bdf8';
-                        g.fillRect(x + 2, y + 2, 8, 22);
-                        g.fillStyle = '#0f172a';
-                    }
-                }
-            } else if (type === 'brick') {
-                g.fillStyle = '#991b1b'; g.fillRect(0, 0, 128, 128);
-                g.fillStyle = '#7f1d1d';
-                for (let y = 0; y < 128; y += 16) {
-                    g.fillRect(0, y, 128, 2);
-                    for (let x = (y / 16) % 2 * 16; x < 128; x += 32) g.fillRect(x, y, 2, 16);
-                }
-            } else {
-                g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 128);
-            }
-
-            const tex = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tex);
+            if (grid) {
+                g.fillStyle = '#334155'; g.fillRect(0, 0, 128, 128);
+                g.fillStyle = '#3b4a61'; g.fillRect(0, 0, 64, 64); g.fillRect(64, 64, 64, 64);
+                g.strokeStyle = 'rgba(255,255,255,0.15)'; g.strokeRect(0, 0, 128, 128);
+            } else { g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 128); }
+            const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
             gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-            return tex;
+            return t;
+        }
+        const texGrid = createTex(true), texSolid = createTex(false);
+
+        const boxData = new Float32Array([
+            -0.5,-0.5,0.5,0,0,1,0,1, 0.5,-0.5,0.5,0,0,1,1,1, 0.5,0.5,0.5,0,0,1,1,0, -0.5,-0.5,0.5,0,0,1,0,1, 0.5,0.5,0.5,0,0,1,1,0, -0.5,0.5,0.5,0,0,1,0,0,
+            0.5,-0.5,-0.5,0,0,-1,0,1, -0.5,-0.5,-0.5,0,0,-1,1,1, -0.5,0.5,-0.5,0,0,-1,1,0, 0.5,-0.5,-0.5,0,0,-1,0,1, -0.5,0.5,-0.5,0,0,-1,1,0, 0.5,0.5,-0.5,0,0,-1,0,0,
+            -0.5,0.5,0.5,0,1,0,0,1, 0.5,0.5,0.5,0,1,0,1,1, 0.5,0.5,-0.5,0,1,0,1,0, -0.5,0.5,0.5,0,1,0,0,1, 0.5,0.5,-0.5,0,1,0,1,0, -0.5,0.5,-0.5,0,1,0,0,0,
+            -0.5,-0.5,-0.5,0,-1,0,0,1, 0.5,-0.5,-0.5,0,-1,0,1,1, 0.5,-0.5,0.5,0,-1,0,1,0, -0.5,-0.5,-0.5,0,-1,0,0,1, 0.5,-0.5,0.5,0,-1,0,1,0, -0.5,-0.5,0.5,0,-1,0,0,0,
+            0.5,-0.5,0.5,1,0,0,0,1, 0.5,-0.5,-0.5,1,0,0,1,1, 0.5,0.5,-0.5,1,0,0,1,0, 0.5,-0.5,0.5,1,0,0,0,1, 0.5,0.5,-0.5,1,0,0,1,0, 0.5,0.5,0.5,1,0,0,0,0,
+            -0.5,-0.5,-0.5,-1,0,0,0,1, -0.5,-0.5,0.5,-1,0,0,1,1, -0.5,0.5,0.5,-1,0,0,1,0, -0.5,-0.5,-0.5,-1,0,0,0,1, -0.5,0.5,0.5,-1,0,0,1,0, -0.5,0.5,-0.5,-1,0,0,0,0
+        ]);
+        const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.bufferData(gl.ARRAY_BUFFER, boxData, gl.STATIC_DRAW);
+
+        const sphereVerts = [];
+        for (let lat = 0; lat < 10; lat++) {
+            const t1 = lat * Math.PI / 10, t2 = (lat + 1) * Math.PI / 10;
+            for (let lon = 0; lon < 14; lon++) {
+                const p1 = lon * 2 * Math.PI / 14, p2 = (lon + 1) * 2 * Math.PI / 14;
+                const pt = (t, p) => [Math.sin(t)*Math.cos(p), Math.cos(t), Math.sin(t)*Math.sin(p)];
+                const a = pt(t1, p1), b = pt(t2, p1), c = pt(t2, p2), d = pt(t1, p2);
+                [a, b, c, a, c, d].forEach(v => sphereVerts.push(v.at(0)*0.5, v.at(1)*0.5, v.at(2)*0.5, v.at(0), v.at(1), v.at(2), 0.5, 0.5));
+            }
+        }
+        const sphereVbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereVerts), gl.STATIC_DRAW);
+        const aPos = gl.getAttribLocation(prog, 'aPos'), aNorm = gl.getAttribLocation(prog, 'aNorm'), aUV = gl.getAttribLocation(prog, 'aUV');
+        gl.enableVertexAttribArray(aPos); gl.enableVertexAttribArray(aNorm); gl.enableVertexAttribArray(aUV);
+        const uProj = gl.getUniformLocation(prog, 'uProj'), uView = gl.getUniformLocation(prog, 'uView'), uModel = gl.getUniformLocation(prog, 'uModel'), uUVScale = gl.getUniformLocation(prog, 'uUVScale'), uTint = gl.getUniformLocation(prog, 'uTint');
+
+        function drawBox(x, y, z, sx, sy, sz, rotY, tex, r, g, b, uv = 1) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+            const c = Math.cos(rotY), s = Math.sin(rotY);
+            gl.uniformMatrix4fv(uModel, false, new Float32Array([sx*c,0,-sx*s,0, 0,sy,0,0, sz*s,0,sz*c,0, x,y,z,1]));
+            gl.uniform2f(uUVScale, uv, uv); gl.uniform3f(uTint, r, g, b); gl.bindTexture(gl.TEXTURE_2D, tex); gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
 
-        const textures = {
-            asphalt: createGLTexture('asphalt'),
-            grass: createGLTexture('grass'),
-            windows: createGLTexture('windows'),
-            brick: createGLTexture('brick'),
-            white: createGLTexture('white')
-        };
-        const boxVerts = new Float32Array([
-            -0.5,-0.5, 0.5,  0, 0, 1,  0,1,   0.5,-0.5, 0.5,  0, 0, 1,  1,1,   0.5, 0.5, 0.5,  0, 0, 1,  1,0,
-            -0.5,-0.5, 0.5,  0, 0, 1,  0,1,   0.5, 0.5, 0.5,  0, 0, 1,  1,0,  -0.5, 0.5, 0.5,  0, 0, 1,  0,0,
-             0.5,-0.5,-0.5,  0, 0,-1,  0,1,  -0.5,-0.5,-0.5,  0, 0,-1,  1,1,  -0.5, 0.5,-0.5,  0, 0,-1,  1,0,
-             0.5,-0.5,-0.5,  0, 0,-1,  0,1,  -0.5, 0.5,-0.5,  0, 0,-1,  1,0,   0.5, 0.5,-0.5,  0, 0,-1,  0,0,
-            -0.5, 0.5, 0.5,  0, 1, 0,  0,1,   0.5, 0.5, 0.5,  0, 1, 0,  1,1,   0.5, 0.5,-0.5,  0, 1, 0,  1,0,
-            -0.5, 0.5, 0.5,  0, 1, 0,  0,1,   0.5, 0.5,-0.5,  0, 1, 0,  1,0,  -0.5, 0.5,-0.5,  0, 1, 0,  0,0,
-            -0.5,-0.5,-0.5,  0,-1, 0,  0,1,   0.5,-0.5,-0.5,  0,-1, 0,  1,1,   0.5,-0.5, 0.5,  0,-1, 0,  1,0,
-            -0.5,-0.5,-0.5,  0,-1, 0,  0,1,   0.5,-0.5, 0.5,  0,-1, 0,  1,0,  -0.5,-0.5, 0.5,  0,-1, 0,  0,0,
-             0.5,-0.5, 0.5,  1, 0, 0,  0,1,   0.5,-0.5,-0.5,  1, 0, 0,  1,1,   0.5, 0.5,-0.5,  1, 0, 0,  1,0,
-             0.5,-0.5, 0.5,  1, 0, 0,  0,1,   0.5, 0.5,-0.5,  1, 0, 0,  1,0,   0.5, 0.5, 0.5,  1, 0, 0,  0,0,
-            -0.5,-0.5,-0.5, -1, 0, 0,  0,1,  -0.5,-0.5, 0.5, -1, 0, 0,  1,1,  -0.5, 0.5, 0.5, -1, 0, 0,  1,0,
-            -0.5,-0.5,-0.5, -1, 0, 0,  0,1,  -0.5, 0.5, 0.5, -1, 0, 0,  1,0,  -0.5, 0.5,-0.5, -1, 0, 0,  0,0
-        ]);
+        function drawPart(x, y, z, sx, sy, sz, rotY, rotX, r, g, b) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo);
+            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+            const cy = Math.cos(rotY), sy_ = Math.sin(rotY), cx = Math.cos(rotX), sx_ = Math.sin(rotX);
+            gl.uniformMatrix4fv(uModel, false, new Float32Array([sx*cy,0,-sx*sy_,0, sy*sy_*sx_,sy*cx,sy*cy*sx_,0, sz*sy_*cx,-sz*sx_,sz*cy*cx,0, x,y,z,1]));
+            gl.uniform2f(uUVScale, 1, 1); gl.uniform3f(uTint, r, g, b); gl.bindTexture(gl.TEXTURE_2D, texSolid); gl.drawArrays(gl.TRIANGLES, 0, sphereVerts.length / 8);
+        }
 
-        const vbo = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-        gl.bufferData(gl.ARRAY_BUFFER, boxVerts, gl.STATIC_DRAW);
+        function drawDetailedCar(cx, cz, ang, r, g, b) {
+            const c = Math.cos(ang), s = Math.sin(ang);
+            const put = (ox, oy, oz, sx, sy, sz, cr, cg, cb) => {
+                drawBox(cx + ox*c + oz*s, oy, cz - ox*s + oz*c, sx, sy, sz, ang, texSolid, cr, cg, cb);
+            };
+            put(0, 0.45, 0, 2.05, 0.42, 4.5, r, g, b);
+            put(0, 0.68, 1.45, 1.95, 0.25, 1.4, r*0.95, g*0.95, b*0.95);
+            put(0, 0.70, -1.6, 1.95, 0.28, 1.1, r*0.95, g*0.95, b*0.95);
+            put(0, 1.05, -0.15, 1.68, 0.52, 2.0, 0.08, 0.11, 0.16);
+            put(0, 1.32, -0.15, 1.62, 0.08, 1.85, r, g, b);
+            put(0, 0.96, -2.05, 1.85, 0.07, 0.28, 0.1, 0.1, 0.12);
+            put(0, 0.35, 2.28, 2.08, 0.24, 0.16, 0.12, 0.12, 0.14);
+            put(-0.68, 0.58, 2.26, 0.42, 0.16, 0.08, 1.0, 0.96, 0.75);
+            put(0.68, 0.58, 2.26, 0.42, 0.16, 0.08, 1.0, 0.96, 0.75);
+            put(-0.68, 0.62, -2.26, 0.45, 0.15, 0.08, 0.95, 0.12, 0.12);
+            put(0.68, 0.62, -2.26, 0.45, 0.15, 0.08, 0.95, 0.12, 0.12);
+            [-0.98, 0.98].forEach(wx => [-1.35, 1.35].forEach(wz => {
+                put(wx, 0.36, wz, 0.32, 0.72, 0.72, 0.08, 0.08, 0.09);
+                put(wx * 1.04, 0.36, wz, 0.1, 0.42, 0.42, 0.75, 0.78, 0.82);
+            }));
+        }
+        const DB_URL = "https://" + "test-83342-default-rtdb" + ".firebaseio.com";
 
-        const aPos = gl.getAttribLocation(prog, 'aPos');
-        const aNorm = gl.getAttribLocation(prog, 'aNorm');
-        const aUV = gl.getAttribLocation(prog, 'aUV');
-        gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0);
-        gl.enableVertexAttribArray(aNorm); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12);
-        gl.enableVertexAttribArray(aUV); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+        let myNick = "", started = false, chatOpen = false;
+        let camYaw = 0, camPitch = 0.25, camDist = 4.5, dragging = false;
+        let carMode = "none";
+        let hostNick = "";
+        let lastProj = null, lastView = null;
 
-        function createSphereData(latBands, longBands) {
-            const verts = [];
-            for (let lat = 0; lat < latBands; lat++) {
-                const th1 = lat * Math.PI / latBands, th2 = (lat + 1) * Math.PI / latBands;
-                for (let lon = 0; lon < longBands; lon++) {
-                    const ph1 = lon * 2 * Math.PI / longBands, ph2 = (lon + 1) * 2 * Math.PI / longBands;
-                    const p = (th, ph) => [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)];
-                    const a = p(th1, ph1), b = p(th2, ph1), c = p(th2, ph2), d = p(th1, ph2);
-                    [a, b, c, a, c, d].forEach(v => {
-                        verts.push(v.at(0) * 0.5, v.at(1) * 0.5, v.at(2) * 0.5, v.at(0), v.at(1), v.at(2), 0.5, 0.5);
+        const player = { x: -2.5, y: 0, z: 0, vy: 0, angle: Math.PI, walk: 0 };
+        const myCar = { x: 2.5, z: 0, angle: Math.PI, speed: 0 };
+        let remotePlayers = {};
+        let lastChatId = "";
+
+        async function loginAndPlay() {
+            const nick = document.getElementById('nick-input').value.trim();
+            const pass = document.getElementById('pass-input').value.trim();
+            const msg = document.getElementById('auth-msg');
+
+            if (nick.length < 3 || pass.length < 3) {
+                msg.style.color = "#f87171";
+                msg.innerText = "Введите ник и пароль (минимум 3 символа)!";
+                return;
+            }
+            msg.style.color = "#c084fc";
+            msg.innerText = "Проверка пароля в базе данных...";
+
+            try {
+                const res = await fetch(DB_URL + "/users/" + encodeURIComponent(nick) + ".json");
+                const userData = await res.json();
+
+                if (userData && userData.password !== pass) {
+                    msg.style.color = "#f87171";
+                    msg.innerText = "Неверный пароль от этого аккаунта!";
+                    return;
+                }
+                if (!userData) {
+                    await fetch(DB_URL + "/users/" + encodeURIComponent(nick) + ".json", {
+                        method: 'PUT', body: JSON.stringify({ password: pass, created: Date.now() })
                     });
                 }
-            }
-            return new Float32Array(verts);
-        }
-
-        const sphereVerts = createSphereData(14, 18);
-        const sphereVbo = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo);
-        gl.bufferData(gl.ARRAY_BUFFER, sphereVerts, gl.STATIC_DRAW);
-
-        const uProj = gl.getUniformLocation(prog, 'uProj');
-        const uView = gl.getUniformLocation(prog, 'uView');
-        const uModel = gl.getUniformLocation(prog, 'uModel');
-        const uUVScale = gl.getUniformLocation(prog, 'uUVScale');
-        const uTint = gl.getUniformLocation(prog, 'uTint');
-
-        function bindBufferData(buffer) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0);
-            gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12);
-            gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
-        }
-
-        function draw3DBox(x, y, z, sx, sy, sz, rotY, tex, r, g, b, uvX = 1, uvY = 1) {
-            bindBufferData(vbo);
-            const c = Math.cos(rotY), s = Math.sin(rotY);
-            const m = new Float32Array([
-                sx * c, 0, -sx * s, 0,
-                0, sy, 0, 0,
-                sz * s, 0, sz * c, 0,
-                x, y, z, 1
-            ]);
-            gl.uniformMatrix4fv(uModel, false, m);
-            gl.uniform2f(uUVScale, uvX, uvY);
-            gl.uniform3f(uTint, r, g, b);
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.drawArrays(gl.TRIANGLES, 0, 36);
-        }
-
-        function drawSmoothPart(x, y, z, sx, sy, sz, rotY, rotX, r, g, b) {
-            bindBufferData(sphereVbo);
-            const cy = Math.cos(rotY), sy_ = Math.sin(rotY);
-            const cx = Math.cos(rotX), sx_ = Math.sin(rotX);
-            const m = new Float32Array([
-                sx * cy, 0, -sx * sy_, 0,
-                sy * sy_ * sx_, sy * cx, sy * cy * sx_, 0,
-                sz * sy_ * cx, -sz * sx_, sz * cy * cx, 0,
-                x, y, z, 1
-            ]);
-            gl.uniformMatrix4fv(uModel, false, m);
-            gl.uniform2f(uUVScale, 1, 1);
-            gl.uniform3f(uTint, r, g, b);
-            gl.bindTexture(gl.TEXTURE_2D, textures.white);
-            gl.drawArrays(gl.TRIANGLES, 0, sphereVerts.length / 8);
-        }
-        function setCamera(eyeX, eyeY, eyeZ, targetX, targetY, targetZ) {
-            const aspect = W / H, fov = 1.05, near = 0.2, far = 300;
-            const f = 1.0 / Math.tan(fov / 2);
-            gl.uniformMatrix4fv(uProj, false, new Float32Array([
-                f / aspect, 0, 0, 0,
-                0, f, 0, 0,
-                0, 0, (far + near) / (near - far), -1,
-                0, 0, (2 * far * near) / (near - far), 0
-            ]));
-
-            let zx = eyeX - targetX, zy = eyeY - targetY, zz = eyeZ - targetZ;
-            let zl = Math.hypot(zx, zy, zz); zx /= zl; zy /= zl; zz /= zl;
-            let xx = zz, xy = 0, xz = -zx;
-            let xl = Math.hypot(xx, xz) || 1; xx /= xl; xz /= xl;
-            let yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
-
-            gl.uniformMatrix4fv(uView, false, new Float32Array([
-                xx, yx, zx, 0,
-                xy, yy, zy, 0,
-                xz, yz, zz, 0,
-                -(xx * eyeX + xy * eyeY + xz * eyeZ),
-                -(yx * eyeX + yy * eyeY + yz * eyeZ),
-                -(zx * eyeX + zy * eyeY + zz * eyeZ), 1
-            ]));
-        }
-
-        let playerNick = "Domik_Brane";
-        let isGameStarted = false;
-        let isChatOpen = false;
-        let camYaw = 0;
-        let camPitch = 0.35;
-
-        const player = { x: -4, y: 0, z: 12, vy: 0, angle: 0, walkTime: 0 };
-        const cars = [
-            { x: 3.5, z: 12, angle: 0, speed: 0, r: 0.12, g: 0.13, b: 0.16, name: 'BMW M5 F90' },
-            { x: -16, z: -12, angle: 0.5, speed: 0, r: 0.58, g: 0.2, b: 0.92, name: 'Nissan GT-R' }
-        ];
-        let currentCar = null;
-
-        let isDragging = false;
-        canvas.addEventListener('mousedown', () => {
-            isDragging = true;
-            if (isGameStarted && !isChatOpen && canvas.requestPointerLock) canvas.requestPointerLock();
-        });
-        window.addEventListener('mouseup', () => { isDragging = false; });
-        window.addEventListener('mousemove', (e) => {
-            if (!isGameStarted || isChatOpen) return;
-            if (document.pointerLockElement === canvas || isDragging) {
-                camYaw -= e.movementX * 0.005;
-                camPitch = Math.max(0.05, Math.min(1.25, camPitch + e.movementY * 0.004));
-            }
-        });
-
-        function launchGame() {
-            const nick = document.getElementById('nick-input').value.trim();
-            if (nick.length < 3) {
-                document.getElementById('nick-error').innerText = "Введите ник минимум из 3 символов!";
+            } catch (e) {
+                msg.style.color = "#f87171";
+                msg.innerText = "Ошибка сети или правил доступа БД!";
                 return;
             }
-            playerNick = nick;
-            const serverVal = document.getElementById('server-select').value;
-            document.getElementById('server-badge').innerText = serverVal;
-            document.getElementById('loading-server-name').innerText = "Вход на " + serverVal;
 
-            document.getElementById('launcher-screen').classList.add('hidden');
-            const loader = document.getElementById('loading-screen');
-            const fill = document.getElementById('progress-fill');
-            const status = document.getElementById('loading-status');
-            loader.classList.add('active');
-
-            let progress = 0;
-            const steps = [
-                { p: 25, text: "Соединение с игровым сервером..." },
-                { p: 55, text: "Загрузка текстур города Арзамас..." },
-                { p: 85, text: "Синхронизация автопарка и персонажа..." },
-                { p: 100, text: "Добро пожаловать в игру!" }
-            ];
-            let stepIdx = 0;
-
-            const timer = setInterval(() => {
-                progress += 4;
-                fill.style.width = progress + "%";
-                if (stepIdx < steps.length && progress >= steps.at(stepIdx).p) {
-                    status.innerText = steps.at(stepIdx).text;
-                    stepIdx++;
-                }
-                if (progress >= 100) {
-                    clearInterval(timer);
-                    setTimeout(() => {
-                        loader.classList.remove('active');
-                        document.getElementById('hud').style.display = 'block';
-                        isGameStarted = true;
-                        addChatMessage(`<span style="color:#facc15">[Сервер]: Добро пожаловать на RADMIR WEB RP, ${playerNick}!</span>`);
-                        addChatMessage(`<span style="color:#c084fc">[Подсказка]: Кликни мышью по экрану для обзора на 360°. [F] — сесть в машину.</span>`);
-                    }, 350);
-                }
-            }, 60);
+            myNick = nick;
+            document.getElementById('badge').innerText = "Test Server #1 • " + myNick;
+            document.getElementById('launcher').classList.add('hidden');
+            document.getElementById('hud').style.display = 'block';
+            started = true;
+            addChat(`<span style="color:#facc15">[Сервер]: Вы вошли как ${myNick}!</span>`);
+            sendChatOnline(`<span style="color:#4ade80">[Сервер]: ${myNick} подключился к серверу.</span>`);
         }
 
-        function addChatMessage(html) {
-            const box = document.getElementById('chat-messages');
-            box.innerHTML += `<div>${html}</div>`;
-            box.scrollTop = box.scrollHeight;
+        function addChat(html) {
+            const log = document.getElementById('chat-log');
+            log.innerHTML += `<div>${html}</div>`;
+            log.scrollTop = log.scrollHeight;
         }
+
+        async function sendChatOnline(text) {
+            try {
+                await fetch(DB_URL + "/chat.json", {
+                    method: 'POST', body: JSON.stringify({ text: text, time: Date.now() })
+                });
+            } catch (e) {}
+        }
+
+        setInterval(async () => {
+            if (!started || !myNick) return;
+            try {
+                await fetch(DB_URL + "/online/" + encodeURIComponent(myNick) + ".json", {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        x: player.x, y: player.y, z: player.z, angle: player.angle,
+                        carMode: carMode, carX: myCar.x, carZ: myCar.z, carAng: myCar.angle, ts: Date.now()
+                    })
+                });
+                const [pRes, cRes] = await Promise.all([
+                    fetch(DB_URL + "/online.json"),
+                    fetch(DB_URL + "/chat.json?orderBy=\"$key\"&limitToLast=1")
+                ]);
+                const pData = await pRes.json() || {};
+                const now = Date.now();
+                remotePlayers = {};
+                for (let [k, v] of Object.entries(pData)) {
+                    if (k !== myNick && v && now - v.ts < 8000) remotePlayers[k] = v;
+                }
+                const cData = await cRes.json();
+                if (cData) {
+                    const id = Object.keys(cData).at(0);
+                    if (id && id !== lastChatId) {
+                        lastChatId = id;
+                        addChat(cData[id].text);
+                    }
+                }
+            } catch (e) {}
+        }, 250);
+        canvas.addEventListener('mousedown', () => { dragging = true; if (started && !chatOpen && canvas.requestPointerLock) canvas.requestPointerLock(); });
+        window.addEventListener('mouseup', () => { dragging = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (!started || chatOpen) return;
+            if (document.pointerLockElement === canvas || dragging) {
+                camYaw -= e.movementX * 0.005;
+                camPitch = Math.max(-0.05, Math.min(1.15, camPitch + e.movementY * 0.004));
+            }
+        });
+        window.addEventListener('wheel', (e) => { if (started) camDist = Math.max(2.5, Math.min(14, camDist + e.deltaY * 0.005)); });
+
         const keys = {};
         window.addEventListener('keydown', (e) => {
-            if (!isGameStarted) return;
-            if (e.code === 'KeyT' && !isChatOpen) {
-                e.preventDefault();
-                isChatOpen = true;
+            if (!started) return;
+            if (e.code === 'KeyT' && !chatOpen) {
+                e.preventDefault(); chatOpen = true;
                 if (document.exitPointerLock) document.exitPointerLock();
-                const inp = document.getElementById('chat-input');
-                inp.style.display = 'block';
-                inp.focus();
+                const inp = document.getElementById('chat-input'); inp.style.display = 'block'; inp.focus();
                 return;
             }
-            if (isChatOpen) {
+            if (chatOpen) {
                 if (e.code === 'Enter') {
-                    const inp = document.getElementById('chat-input');
-                    const txt = inp.value.trim();
+                    const inp = document.getElementById('chat-input'); const txt = inp.value.trim();
                     if (txt) {
-                        if (txt === '/gps') addChatMessage(`<span style="color:#38bdf8">[GPS]: 1. Кремль | 2. Автосалон | 3. Пост ДПС</span>`);
-                        else if (txt.startsWith('/me ')) addChatMessage(`<span style="color:#f472b6">* ${playerNick} ${txt.slice(4)}</span>`);
-                        else if (txt.startsWith('/do ')) addChatMessage(`<span style="color:#38bdf8">${txt.slice(4)} (${playerNick})</span>`);
-                        else if (txt.startsWith('/n ')) addChatMessage(`<span style="color:#9ca3af">(( ${playerNick}: ${txt.slice(3)} ))</span>`);
-                        else addChatMessage(`${playerNick}: ${txt}`);
+                        const formatted = txt.startsWith('/me ') ? `<span style="color:#f472b6">* ${myNick} ${txt.slice(4)}</span>` : `${myNick}: ${txt}`;
+                        sendChatOnline(formatted);
                     }
-                    inp.value = '';
-                    inp.style.display = 'none';
-                    isChatOpen = false;
-                } else if (e.code === 'Escape') {
-                    document.getElementById('chat-input').style.display = 'none';
-                    isChatOpen = false;
-                }
+                    inp.value = ''; inp.style.display = 'none'; chatOpen = false;
+                } else if (e.code === 'Escape') { document.getElementById('chat-input').style.display = 'none'; chatOpen = false; }
                 return;
             }
+
             if (e.code === 'KeyF') {
-                if (!currentCar) {
-                    for (let c of cars) {
-                        if (Math.hypot(player.x - c.x, player.z - c.z) < 4.5) {
-                            currentCar = c;
-                            addChatMessage(`<span style="color:#f472b6">* ${playerNick} открыл дверь и сел в ${c.name}</span>`);
-                            break;
-                        }
-                    }
-                } else {
-                    player.x = currentCar.x - 2.5;
-                    player.z = currentCar.z;
-                    addChatMessage(`<span style="color:#f472b6">* ${playerNick} вышел из ${currentCar.name}</span>`);
-                    currentCar = null;
+                if (carMode === "none" && Math.hypot(player.x - myCar.x, player.z - myCar.z) < 4) {
+                    carMode = "driver";
+                    sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел за руль автомобиля</span>`);
+                } else if (carMode !== "none") {
+                    carMode = "none";
+                    player.x -= 2.2;
+                    sendChatOnline(`<span style="color:#f472b6">* ${myNick} вышел из автомобиля</span>`);
                 }
             }
+
+            if (e.code === 'KeyG' && carMode === "none") {
+                for (let [rNick, rp] of Object.entries(remotePlayers)) {
+                    if (Math.hypot(player.x - rp.carX, player.z - rp.carZ) < 4.5) {
+                        carMode = "passenger";
+                        hostNick = rNick;
+                        sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел на пассажирское место к ${rNick}</span>`);
+                        break;
+                    }
+                }
+            }
+
+            if (e.code === 'KeyH' && carMode === "none") {
+                for (let [rNick, rp] of Object.entries(remotePlayers)) {
+                    if (Math.hypot(player.x - rp.x, player.z - rp.z) < 3.5) {
+                        sendChatOnline(`<span style="color:#f472b6">* ${myNick} пожал руку игроку ${rNick}</span>`);
+                        break;
+                    }
+                }
+            }
+
             keys[e.code] = true;
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
+        function setCamera(eyeX, eyeY, eyeZ, tx, ty, tz) {
+            const f = 1.0 / Math.tan(0.5), aspect = W / H, near = 0.2, far = 250;
+            lastProj = new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)/(near-far),-1, 0,0,(2*far*near)/(near-far),0]);
+            gl.uniformMatrix4fv(uProj, false, lastProj);
+
+            let zx = eyeX - tx, zy = eyeY - ty, zz = eyeZ - tz, zl = Math.hypot(zx, zy, zz);
+            zx /= zl; zy /= zl; zz /= zl;
+            let xx = zz, xz = -zx, xl = Math.hypot(xx, xz) || 1; xx /= xl; xz /= xl;
+            let yx = zy * xz, yy = zz * xx - zx * xz, yz = -zy * xx;
+            lastView = new Float32Array([xx,yx,zx,0, 0,yy,0,0, xz,yz,zz,0, -(xx*eyeX+xz*eyeZ), -(yx*eyeX+yy*eyeY+yz*eyeZ), -(zx*eyeX+zy*eyeY+zz*eyeZ), 1]);
+            gl.uniformMatrix4fv(uView, false, lastView);
+        }
+
+        function toScreen(wx, wy, wz) {
+            if (!lastView || !lastProj) return null;
+            const vx = lastView.at(0)*wx + lastView.at(4)*wy + lastView.at(8)*wz + lastView.at(12);
+            const vy = lastView.at(1)*wx + lastView.at(5)*wy + lastView.at(9)*wz + lastView.at(13);
+            const vz = lastView.at(2)*wx + lastView.at(6)*wy + lastView.at(10)*wz + lastView.at(14);
+            if (vz >= -0.2) return null;
+            const px = lastProj.at(0)*vx, py = lastProj.at(5)*vy, pw = -vz;
+            return { x: (px / pw * 0.5 + 0.5) * W, y: (-py / pw * 0.5 + 0.5) * H };
+        }
+        function drawHuman(hx, hy, hz, ang, walk, r, g, b) {
+            const swing = Math.sin(walk) * 0.4, bob = Math.abs(Math.cos(walk)) * 0.03;
+            const pc = Math.cos(ang), ps = Math.sin(ang);
+            const p = (ox, oy, oz, sx, sy, sz, rx, cr, cg, cb) => drawPart(hx + ox*pc + oz*ps, hy + bob + oy, hz - ox*ps + oz*pc, sx, sy, sz, ang, rx, cr, cg, cb);
+            p(0, 1.68, 0, 0.24, 0.27, 0.25, 0, 0.92, 0.74, 0.62);
+            p(0, 1.73, -0.02, 0.25, 0.22, 0.26, 0, 0.15, 0.12, 0.1);
+            p(0, 1.25, 0, 0.42, 0.58, 0.24, 0, r, g, b);
+            p(-0.26, 1.25, -Math.sin(swing)*0.15, 0.12, 0.52, 0.12, -swing, r, g, b);
+            p(0.26, 1.25, Math.sin(swing)*0.15, 0.12, 0.52, 0.12, swing, r, g, b);
+            p(-0.11, 0.55, Math.sin(swing)*0.18, 0.15, 0.72, 0.16, swing, 0.14, 0.18, 0.26);
+            p(0.11, 0.55, -Math.sin(swing)*0.18, 0.15, 0.72, 0.16, -swing, 0.14, 0.18, 0.26);
+        }
+
         function loop() {
             requestAnimationFrame(loop);
 
-            if (isGameStarted && !isChatOpen) {
-                if (!currentCar) {
-                    let spd = keys['ShiftLeft'] ? 0.24 : 0.13;
-                    let dx = 0, dz = 0, moved = false;
-                    if (keys['KeyW']) { dx -= Math.sin(camYaw); dz -= Math.cos(camYaw); moved = true; }
-                    if (keys['KeyS']) { dx += Math.sin(camYaw); dz += Math.cos(camYaw); moved = true; }
-                    if (keys['KeyA']) { dx -= Math.cos(camYaw); dz += Math.sin(camYaw); moved = true; }
-                    if (keys['KeyD']) { dx += Math.cos(camYaw); dz -= Math.sin(camYaw); moved = true; }
+            if (started && !chatOpen) {
+                if (carMode === "none") {
+                    const fwdX = -Math.sin(camYaw), fwdZ = -Math.cos(camYaw);
+                    const rightX = Math.cos(camYaw), rightZ = -Math.sin(camYaw);
+                    let dx = 0, dz = 0;
+                    if (keys['KeyW']) { dx += fwdX; dz += fwdZ; }
+                    if (keys['KeyS']) { dx -= fwdX; dz -= fwdZ; }
+                    if (keys['KeyD']) { dx += rightX; dz += rightZ; }
+                    if (keys['KeyA']) { dx -= rightX; dz -= rightZ; }
+                    const len = Math.hypot(dx, dz);
+                    if (len > 0) {
+                        const spd = keys['ShiftLeft'] ? 0.22 : 0.11;
+                        player.x += (dx / len) * spd; player.z += (dz / len) * spd;
+                        player.angle = Math.atan2(dx, dz); player.walk += spd * 1.4;
+                    } else player.walk = 0;
 
-                    if (moved) {
-                        player.x += dx * spd;
-                        player.z += dz * spd;
-                        player.angle = Math.atan2(dx, dz);
-                        player.walkTime += spd * 1.8;
-                    } else {
-                        player.walkTime = 0;
-                    }
-
-                    if (keys['Space'] && player.y <= 0.01) player.vy = 0.22;
+                    if (keys['Space'] && player.y <= 0.01) player.vy = 0.2;
                     player.y += player.vy;
-                    if (player.y > 0) player.vy -= 0.012;
-                    else { player.y = 0; player.vy = 0; }
-                } else {
-                    if (keys['KeyW']) currentCar.speed = Math.min(currentCar.speed + 0.02, 0.8);
-                    else if (keys['KeyS']) currentCar.speed = Math.max(currentCar.speed - 0.02, -0.35);
-                    else currentCar.speed *= 0.96;
-
-                    if (Math.abs(currentCar.speed) > 0.01) {
-                        let dir = currentCar.speed > 0 ? 1 : -1;
-                        if (keys['KeyA']) currentCar.angle += 0.04 * dir;
-                        if (keys['KeyD']) currentCar.angle -= 0.04 * dir;
+                    if (player.y > 0) player.vy -= 0.012; else { player.y = 0; player.vy = 0; }
+                } else if (carMode === "driver") {
+                    if (keys['KeyW']) myCar.speed = Math.min(myCar.speed + 0.018, 0.75);
+                    else if (keys['KeyS']) myCar.speed = Math.max(myCar.speed - 0.018, -0.35);
+                    else myCar.speed *= 0.96;
+                    if (Math.abs(myCar.speed) > 0.01) {
+                        const dir = myCar.speed > 0 ? 1 : -1;
+                        if (keys['KeyA']) myCar.angle += 0.04 * dir;
+                        if (keys['KeyD']) myCar.angle -= 0.04 * dir;
                     }
-                    currentCar.x += Math.sin(currentCar.angle) * currentCar.speed;
-                    currentCar.z += Math.cos(currentCar.angle) * currentCar.speed;
+                    myCar.x += Math.sin(myCar.angle) * myCar.speed;
+                    myCar.z += Math.cos(myCar.angle) * myCar.speed;
+                    player.x = myCar.x; player.z = myCar.z;
+                } else if (carMode === "passenger") {
+                    const host = remotePlayers[hostNick];
+                    if (host) {
+                        player.x = host.carX; player.z = host.carZ;
+                    } else carMode = "none";
                 }
             }
 
-            let target = currentCar || player;
-            let ty = currentCar ? 1.2 : player.y + 1.5;
-            let dist = currentCar ? 10 : 7.5;
-            let eyeX = target.x + Math.sin(camYaw) * Math.cos(camPitch) * dist;
-            let eyeY = ty + Math.sin(camPitch) * dist;
-            let eyeZ = target.z + Math.cos(camYaw) * Math.cos(camPitch) * dist;
+            const tx = carMode === "driver" ? myCar.x : player.x;
+            const ty = carMode !== "none" ? 1.1 : player.y + 1.35;
+            const tz = carMode === "driver" ? myCar.z : player.z;
+            const d = carMode !== "none" ? camDist + 2.5 : camDist;
+            const eyeX = tx + Math.sin(camYaw) * Math.cos(camPitch) * d;
+            const eyeY = ty + Math.sin(camPitch) * d;
+            const eyeZ = tz + Math.cos(camYaw) * Math.cos(camPitch) * d;
 
-            const loc = document.getElementById('location-badge');
-            if (target.x > 5 && target.z < -5) loc.innerText = "Район: Арзамасский Кремль";
-            else if (target.x < -10 && target.z < -5) loc.innerText = "Район: Автосалон Люкс";
-            else if (target.z > 32) loc.innerText = "Район: Пост ДПС";
-            else loc.innerText = "Район: Центральный проспект";
-
-            gl.clearColor(0.53, 0.81, 0.98, 1.0);
+            gl.clearColor(0.55, 0.78, 0.96, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            setCamera(eyeX, eyeY, eyeZ, target.x, ty, target.z);
+            setCamera(eyeX, eyeY, eyeZ, tx, ty, tz);
 
-            // Земля, тротуары и асфальт с разметкой
-            draw3DBox(0, -0.1, 0, 320, 0.2, 320, 0, textures.grass, 1, 1, 1, 40, 40);
-            draw3DBox(0, 0.01, 0, 18, 0.05, 240, 0, textures.white, 0.6, 0.65, 0.7, 1, 1);
-            draw3DBox(0, 0.03, 0, 13, 0.05, 240, 0, textures.asphalt, 1, 1, 1, 3, 45);
-            draw3DBox(0, 0.03, 0, 240, 0.05, 13, 0, textures.asphalt, 1, 1, 1, 45, 3);
-            for (let z = -100; z <= 100; z += 12) {
-                if (Math.abs(z) > 10) draw3DBox(0, 0.06, z, 0.35, 0.02, 5, 0, textures.white, 0.98, 0.8, 0.1, 1, 1);
-            }
+            drawBox(0, -0.1, 0, 200, 0.2, 200, 0, texGrid, 1, 1, 1, 50);
+            drawDetailedCar(myCar.x, myCar.z, myCar.angle, 0.55, 0.2, 0.9);
+            if (carMode === "none") drawHuman(player.x, player.y, player.z, player.angle, player.walk, 0.15, 0.28, 0.55);
 
-            // Здания города и деревья
-            draw3DBox(26, 5.5, -25, 28, 11, 14, 0, textures.brick, 1, 1, 1, 5, 2);
-            draw3DBox(12, 11, -25, 6, 22, 6, 0, textures.brick, 1, 1, 1, 2, 4);
-            draw3DBox(-26, 4.5, -22, 24, 9, 18, 0, textures.windows, 0.4, 0.8, 1.0, 4, 2);
-            draw3DBox(12, 2, 42, 5, 4, 5, 0, textures.white, 0.95, 0.95, 0.98, 1, 1);
-            draw3DBox(12, 2.2, 42, 5.1, 0.6, 5.1, 0, textures.white, 0.15, 0.4, 0.9, 1, 1);
-            draw3DBox(-25, 9, 24, 14, 18, 14, 0, textures.windows, 0.9, 0.92, 0.95, 3, 4);
-            draw3DBox(-25, 12.5, 52, 14, 25, 14, 0, textures.windows, 1.0, 0.9, 0.65, 3, 5);
-            draw3DBox(26, 10, 26, 14, 20, 14, 0, textures.windows, 0.85, 0.9, 0.95, 3, 4);
+            const labels = document.getElementById('labels-layer');
+            labels.innerHTML = "";
+            for (let [rNick, rp] of Object.entries(remotePlayers)) {
+                drawDetailedCar(rp.carX, rp.carZ, rp.carAng, 0.15, 0.65, 0.45);
+                if (rp.carMode === "none") drawHuman(rp.x, rp.y, rp.z, rp.angle, 0, 0.85, 0.25, 0.25);
 
-            for (let z = -72; z <= 72; z += 18) {
-                if (Math.abs(z) < 12) continue;
-                [-11, 11].forEach(tx => {
-                    draw3DBox(tx, 1.25, z, 0.5, 2.5, 0.5, 0, textures.white, 0.45, 0.25, 0.1, 1, 1);
-                    draw3DBox(tx, 3.8, z, 2.8, 3.0, 2.8, 0, textures.grass, 0.6, 1.1, 0.5, 2, 2);
-                });
-            }
-            // Машины
-            cars.forEach(c => {
-                const cos = Math.cos(c.angle), sin = Math.sin(c.angle);
-                draw3DBox(c.x, 0.65, c.z, 2.2, 0.65, 4.4, c.angle, textures.white, c.r, c.g, c.b, 1, 1);
-                draw3DBox(c.x - sin * 0.2, 1.25, c.z - cos * 0.2, 1.8, 0.55, 2.2, c.angle, textures.white, 0.08, 0.12, 0.18, 1, 1);
-                draw3DBox(c.x + sin * 2.21, 0.65, c.z + cos * 2.21, 1.6, 0.2, 0.08, c.angle, textures.white, 1.0, 0.95, 0.6, 1, 1);
-                [-0.95, 0.95].forEach(wx => {
-                    [-1.3, 1.3].forEach(wz => {
-                        draw3DBox(c.x + wx * cos + wz * sin, 0.35, c.z - wx * sin + wz * cos, 0.35, 0.7, 0.7, c.angle, textures.white, 0.1, 0.1, 0.1, 1, 1);
-                    });
-                });
-            });
-
-            // Реалистичный человек с анимациями в стиле GTA: San Andreas
-            if (!currentCar) {
-                const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
-                const isSprinting = isMoving && keys['ShiftLeft'];
-                const isJumping = player.y > 0.05;
-                const t = Date.now() * 0.004;
-
-                let torsoLean = 0, swagger = 0, bob = 0;
-                let legL = 0, legR = 0, kneeL = 0, kneeR = 0;
-                let armL = 0, armR = 0, elbowL = 0.25, elbowR = 0.25;
-
-                if (isJumping) {
-                    torsoLean = 0.15;
-                    legL = -0.85; kneeL = 1.1;
-                    legR = 0.35;  kneeR = 0.4;
-                    armL = -2.1;  elbowL = 0.5;
-                    armR = -1.9;  elbowR = 0.5;
-                } else if (isSprinting) {
-                    const runCycle = player.walkTime * 1.15;
-                    torsoLean = 0.28;
-                    swagger = Math.sin(runCycle) * 0.12;
-                    bob = Math.abs(Math.cos(runCycle)) * 0.08;
-                    legL = Math.sin(runCycle) * 0.95;
-                    legR = -Math.sin(runCycle) * 0.95;
-                    kneeL = Math.max(0, -Math.sin(runCycle)) * 1.1;
-                    kneeR = Math.max(0, Math.sin(runCycle)) * 1.1;
-                    armL = -Math.sin(runCycle) * 1.1;
-                    armR = Math.sin(runCycle) * 1.1;
-                    elbowL = 1.15; elbowR = 1.15;
-                } else if (isMoving) {
-                    const walkCycle = player.walkTime * 0.95;
-                    torsoLean = 0.06;
-                    swagger = Math.sin(walkCycle) * 0.09;
-                    bob = Math.abs(Math.cos(walkCycle)) * 0.035;
-                    legL = Math.sin(walkCycle) * 0.55;
-                    legR = -Math.sin(walkCycle) * 0.55;
-                    kneeL = Math.max(0, -Math.sin(walkCycle)) * 0.55;
-                    kneeR = Math.max(0, Math.sin(walkCycle)) * 0.55;
-                    armL = -Math.sin(walkCycle) * 0.5;
-                    armR = Math.sin(walkCycle) * 0.5;
-                    elbowL = 0.45; elbowR = 0.45;
-                } else {
-                    bob = Math.sin(t) * 0.012;
-                    swagger = Math.sin(t * 0.7) * 0.03;
-                    armL = Math.sin(t) * 0.05;
-                    armR = -Math.sin(t) * 0.05;
-                    elbowL = 0.3; elbowR = 0.3;
+                const pos = toScreen(rp.x, rp.y + 2.15, rp.z);
+                if (pos) {
+                    const tag = document.createElement('div');
+                    tag.className = 'player-tag';
+                    tag.style.left = pos.x + 'px';
+                    tag.style.top = pos.y + 'px';
+                    tag.innerText = rNick + (rp.carMode === "driver" ? " [За рулём]" : "");
+                    labels.appendChild(tag);
                 }
-
-                const cos = Math.cos(player.angle + swagger);
-                const sin = Math.sin(player.angle + swagger);
-                const baseY = player.y + bob;
-
-                const skin = [0.92, 0.74, 0.62];
-                const hair = [0.14, 0.11, 0.09];
-                const jacket = [0.12, 0.22, 0.42];
-                const jeans = [0.13, 0.17, 0.25];
-                const shoes = [0.94, 0.94, 0.96];
-
-                const part = (ox, oy, oz, sx, sy, sz, rx, col) => {
-                    const leanZ = oz + (oy - 0.9) * Math.sin(torsoLean);
-                    const wx = player.x + ox * cos + leanZ * sin;
-                    const wz = player.z - ox * sin + leanZ * cos;
-                    drawSmoothPart(wx, baseY + oy, wz, sx, sy, sz, player.angle + swagger, rx + torsoLean, col.at(0), col.at(1), col.at(2));
-                };
-
-                // Голова, причёска, глаза и шея
-                part(0, 1.72, 0.02, 0.24, 0.28, 0.26, -torsoLean * 0.5, skin);
-                part(0, 1.77, 0.0, 0.255, 0.23, 0.27, -0.1, hair);
-                part(-0.052, 1.74, 0.13, 0.032, 0.022, 0.02, 0, [0.08, 0.08, 0.08]);
-                part(0.052, 1.74, 0.13, 0.032, 0.022, 0.02, 0, [0.08, 0.08, 0.08]);
-                part(0, 1.56, 0.01, 0.11, 0.14, 0.11, 0, skin);
-
-                // Торс
-                part(0, 1.32, 0, 0.44, 0.48, 0.24, 0, jacket);
-                part(0, 1.04, 0, 0.35, 0.32, 0.21, 0, jacket);
-                part(0, 1.34, 0.11, 0.14, 0.42, 0.04, 0, [0.9, 0.92, 0.95]);
-
-                // Левая и правая руки
-                const lShoulderZ = -Math.sin(armL) * 0.15;
-                const lShoulderY = 1.32 + (1 - Math.cos(armL)) * 0.12;
-                part(-0.26, lShoulderY, lShoulderZ, 0.13, 0.33, 0.13, armL, jacket);
-                part(-0.26, lShoulderY - 0.26 * Math.cos(armL - elbowL), lShoulderZ - Math.sin(armL - elbowL) * 0.24, 0.10, 0.31, 0.10, armL - elbowL, skin);
-
-                const rShoulderZ = -Math.sin(armR) * 0.15;
-                const rShoulderY = 1.32 + (1 - Math.cos(armR)) * 0.12;
-                part(0.26, rShoulderY, rShoulderZ, 0.13, 0.33, 0.13, armR, jacket);
-                part(0.26, rShoulderY - 0.26 * Math.cos(armR - elbowR), rShoulderZ - Math.sin(armR - elbowR) * 0.24, 0.10, 0.31, 0.10, armR - elbowR, skin);
-
-                // Левая и правая ноги
-                const lKneeZ = -Math.sin(legL) * 0.22;
-                const lKneeY = 0.48 + (1 - Math.cos(legL)) * 0.18;
-                part(-0.11, 0.68, lKneeZ * 0.5, 0.16, 0.44, 0.17, legL, jeans);
-                const lFootZ = lKneeZ - Math.sin(legL + kneeL) * 0.22;
-                const lFootY = Math.max(0.07, lKneeY - 0.40 * Math.cos(legL + kneeL));
-                part(-0.11, (lKneeY + lFootY) * 0.5, (lKneeZ + lFootZ) * 0.5, 0.13, 0.42, 0.14, legL + kneeL, jeans);
-                part(-0.11, lFootY, lFootZ + 0.06, 0.14, 0.11, 0.28, 0, shoes);
-
-                const rKneeZ = -Math.sin(legR) * 0.22;
-                const rKneeY = 0.48 + (1 - Math.cos(legR)) * 0.18;
-                part(0.11, 0.68, rKneeZ * 0.5, 0.16, 0.44, 0.17, legR, jeans);
-                const rFootZ = rKneeZ - Math.sin(legR + kneeR) * 0.22;
-                const rFootY = Math.max(0.07, rKneeY - 0.40 * Math.cos(legR + kneeR));
-                part(0.11, (rKneeY + rFootY) * 0.5, (rKneeZ + rFootZ) * 0.5, 0.13, 0.42, 0.14, legR + kneeR, jeans);
-                part(0.11, rFootY, rFootZ + 0.06, 0.14, 0.11, 0.28, 0, shoes);
             }
         }
         loop();
