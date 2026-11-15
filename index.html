@@ -35,23 +35,23 @@
         #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
         #chat-container { position: absolute; top: 20px; left: 20px; width: 430px; pointer-events: auto; }
         #chat-messages {
-            background: rgba(15, 23, 42, 0.7); border-radius: 16px; padding: 14px;
+            background: rgba(15, 23, 42, 0.72); border-radius: 16px; padding: 14px;
             height: 185px; overflow-y: auto; color: white; font-size: 14px; line-height: 1.45;
-            display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.12);
         }
         #chat-input {
             display: none; width: 100%; margin-top: 8px; padding: 11px 15px; border-radius: 12px;
             border: 1px solid #a855f7; background: #0f172a; color: white; font-size: 14px; outline: none;
         }
         #server-info {
-            position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.75);
-            padding: 12px 18px; border-radius: 16px; text-align: right; border: 1px solid rgba(255,255,255,0.1);
+            position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.78);
+            padding: 12px 18px; border-radius: 16px; text-align: right; border: 1px solid rgba(255,255,255,0.12);
         }
         #server-badge { color: #c084fc; font-weight: bold; font-size: 15px; }
         #money-badge { color: #4ade80; font-weight: bold; font-size: 18px; margin-top: 4px; }
         #location-badge { color: #cbd5e1; font-size: 13px; margin-top: 4px; }
         #controls-hint {
-            position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.75);
+            position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.78);
             color: #e2e8f0; padding: 12px 18px; border-radius: 16px; font-size: 13px; line-height: 1.6;
         }
     </style>
@@ -97,35 +97,80 @@
         window.addEventListener('resize', resize);
         resize();
 
+        function makeTexture(baseColor, detailColor, type) {
+            const c = document.createElement('canvas');
+            c.width = 64; c.height = 64;
+            const g = c.getContext('2d');
+            g.fillStyle = baseColor;
+            g.fillRect(0, 0, 64, 64);
+
+            if (type === 'asphalt') {
+                for (let i = 0; i < 180; i++) {
+                    g.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.25)';
+                    g.fillRect(Math.random() * 64, Math.random() * 64, 2, 2);
+                }
+            } else if (type === 'brick') {
+                g.fillStyle = detailColor;
+                for (let y = 0; y < 64; y += 16) {
+                    g.fillRect(0, y, 64, 2);
+                    let offset = (y / 16) % 2 === 0 ? 0 : 16;
+                    for (let x = offset; x < 64; x += 32) g.fillRect(x, y, 2, 16);
+                }
+            } else if (type === 'windows') {
+                g.fillStyle = detailColor;
+                g.fillRect(8, 8, 18, 20);
+                g.fillRect(38, 8, 18, 20);
+                g.fillRect(8, 36, 18, 20);
+                g.fillRect(38, 36, 18, 20);
+                g.fillStyle = 'rgba(255,255,255,0.25)';
+                g.fillRect(10, 10, 6, 16);
+                g.fillRect(40, 10, 6, 16);
+            } else if (type === 'zombie') {
+                g.fillStyle = detailColor;
+                g.fillRect(0, 12, 64, 8);
+                g.fillRect(15, 0, 10, 64);
+                g.fillStyle = 'rgba(0,0,0,0.2)';
+                g.fillRect(5, 35, 22, 14);
+            }
+            return ctx.createPattern(c, 'repeat');
+        }
+
+        const texAsphalt = makeTexture('#1e293b', '#334155', 'asphalt');
+        const texKremlin = makeTexture('#991b1b', '#7f1d1d', 'brick');
+        const texHouse1 = makeTexture('#cbd5e1', '#1e3a8a', 'windows');
+        const texHouse2 = makeTexture('#fde68a', '#0f172a', 'windows');
+        const texSalon = makeTexture('#0284c7', '#bae6fd', 'windows');
+        const texZombieClothes = makeTexture('#1d4ed8', '#172554', 'zombie');
+
         let playerNick = "Domik_Brane";
         let isGameStarted = false;
         let isChatOpen = false;
         let camYaw = 0;
-        let camPitch = 0.32;
+        let camPitch = 0.28;
 
         const player = { x: -4, z: 10, angle: 0, walkTime: 0 };
         const cars = [
-            { x: 3.5, z: 10, angle: 0, speed: 0, color: '#18181b', roof: '#09090b', name: 'BMW M5 F90' },
-            { x: -16, z: -12, angle: 0.5, speed: 0, color: '#9333ea', roof: '#6b21a8', name: 'Nissan GT-R' }
+            { x: 3.5, z: 10, angle: 0, speed: 0, color: '#18181b', roof: '#3f3f46', name: 'BMW M5 F90' },
+            { x: -16, z: -12, angle: 0.5, speed: 0, color: '#9333ea', roof: '#c084fc', name: 'Nissan GT-R' }
         ];
         let currentCar = null;
 
         const buildings = [
-            { x: 26, z: -25, w: 28, d: 14, h: 11, color: '#991b1b', top: '#7f1d1d', windows: false },
-            { x: 12, z: -25, w: 6, d: 6, h: 22, color: '#b91c1c', top: '#14532d', windows: false },
-            { x: -26, z: -22, w: 24, d: 18, h: 9, color: '#0284c7', top: '#0369a1', windows: true },
-            { x: 12, z: 42, w: 5, d: 5, h: 4, color: '#f8fafc', top: '#2563eb', windows: false },
-            { x: -25, z: 24, w: 14, d: 14, h: 18, color: '#cbd5e1', top: '#64748b', windows: true },
-            { x: -25, z: 52, w: 14, d: 14, h: 25, color: '#fde68a', top: '#d97706', windows: true },
-            { x: 26, z: 26, w: 14, d: 14, h: 20, color: '#e2e8f0', top: '#475569', windows: true }
+            { x: 26, z: -25, w: 28, d: 14, h: 11, side: texKremlin, top: '#7f1d1d' },
+            { x: 12, z: -25, w: 6, d: 6, h: 22, side: texKremlin, top: '#14532d' },
+            { x: -26, z: -22, w: 24, d: 18, h: 9, side: texSalon, top: '#0369a1' },
+            { x: 12, z: 42, w: 5, d: 5, h: 4, side: '#f8fafc', top: '#2563eb' },
+            { x: -25, z: 24, w: 14, d: 14, h: 18, side: texHouse1, top: '#64748b' },
+            { x: -25, z: 52, w: 14, d: 14, h: 25, side: texHouse2, top: '#d97706' },
+            { x: 26, z: 26, w: 14, d: 14, h: 20, side: texHouse1, top: '#475569' }
         ];
 
         const trees = [];
         for (let z = -75; z <= 75; z += 18) {
-            if (Math.abs(z) < 12) continue;
-            trees.push({ x: -11, z: z }, { x: 11, z: z });
+            if (Math.abs(z) >= 12) {
+                trees.push({ x: -11, z: z }, { x: 11, z: z });
+            }
         }
-
         function project(x, y, z, camX, camY, camZ) {
             let dx = x - camX, dy = y - camY, dz = z - camZ;
             let cosY = Math.cos(-camYaw), sinY = Math.sin(-camYaw);
@@ -141,49 +186,41 @@
             return { x: W / 2 + (rx / fz) * fov, y: H / 2 - (ry / fz) * fov, z: fz };
         }
 
-        function drawBox(cx, cy, cz, w, h, d, angle, colorSide, colorTop, camX, camY, camZ, hasWindows = false) {
+        function drawBox(cx, cy, cz, w, h, d, angle, fillSide, fillTop, camX, camY, camZ) {
             let hw = w / 2, hd = d / 2;
             let cos = Math.cos(angle), sin = Math.sin(angle);
-            let pts3d = [
-                [-hw, 0, -hd], [hw, 0, -hd], [hw, 0, hd], [-hw, 0, hd],
-                [-hw, h, -hd], [hw, h, -hd], [hw, h, hd], [-hw, h, hd]
-            ];
-            let c = pts3d.map(p => project(p * cos - p * sin + cx, p + cy, p * sin + p * cos + cz, camX, camY, camZ));
-            if (c.some(pt => pt === null)) return;
+            let p0 = project(-hw * cos - (-hd) * sin + cx, cy, -hw * sin + (-hd) * cos + cz, camX, camY, camZ);
+            let p1 = project(hw * cos - (-hd) * sin + cx, cy, hw * sin + (-hd) * cos + cz, camX, camY, camZ);
+            let p2 = project(hw * cos - hd * sin + cx, cy, hw * sin + hd * cos + cz, camX, camY, camZ);
+            let p3 = project(-hw * cos - hd * sin + cx, cy, -hw * sin + hd * cos + cz, camX, camY, camZ);
+            let p4 = project(-hw * cos - (-hd) * sin + cx, cy + h, -hw * sin + (-hd) * cos + cz, camX, camY, camZ);
+            let p5 = project(hw * cos - (-hd) * sin + cx, cy + h, hw * sin + (-hd) * cos + cz, camX, camY, camZ);
+            let p6 = project(hw * cos - hd * sin + cx, cy + h, hw * sin + hd * cos + cz, camX, camY, camZ);
+            let p7 = project(-hw * cos - hd * sin + cx, cy + h, -hw * sin + hd * cos + cz, camX, camY, camZ);
 
-            function poly(idxList, col) {
+            if (!p0 || !p1 || !p2 || !p3 || !p4 || !p5 || !p6 || !p7) return;
+
+            function quad(a, b, c, d, style) {
                 ctx.beginPath();
-                ctx.moveTo(c[idxList].x, c[idxList].y);
-                for (let i = 1; i < idxList.length; i++) ctx.lineTo(c[idxList[i]].x, c[idxList[i]].y);
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.lineTo(c.x, c.y);
+                ctx.lineTo(d.x, d.y);
                 ctx.closePath();
-                ctx.fillStyle = col;
+                ctx.fillStyle = style;
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+                ctx.strokeStyle = 'rgba(0,0,0,0.28)';
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
 
-            poly(, colorSide);
-            poly(, colorSide);
-            poly(, colorSide);
-            poly(, colorSide);
-            poly(, colorTop);
-
-            if (hasWindows && h >= 8) {
-                for (let wy = 2.5; wy < h - 2; wy += 3.5) {
-                    let winP = project(cx, cy + wy, cz - hd - 0.1, camX, camY, camZ);
-                    let winP2 = project(cx, cy + wy, cz + hd + 0.1, camX, camY, camZ);
-                    [winP, winP2].forEach(wp => {
-                        if (wp && wp.z < 120) {
-                            let size = Math.max(2, 160 / wp.z);
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.fillRect(wp.x - size * 1.4, wp.y - size / 2, size * 0.8, size);
-                            ctx.fillRect(wp.x + size * 0.6, wp.y - size / 2, size * 0.8, size);
-                        }
-                    });
-                }
-            }
+            quad(p0, p1, p5, p4, fillSide);
+            quad(p1, p2, p6, p5, fillSide);
+            quad(p2, p3, p7, p6, fillSide);
+            quad(p3, p0, p4, p7, fillSide);
+            quad(p4, p5, p6, p7, fillTop);
         }
+
         let isDragging = false;
         canvas.addEventListener('mousedown', () => {
             isDragging = true;
@@ -210,7 +247,7 @@
             document.getElementById('hud').style.display = 'block';
             isGameStarted = true;
             addChatMessage(`<span style="color:#facc15">[Сервер]: Добро пожаловать на RADMIR WEB RP, ${playerNick}!</span>`);
-            addChatMessage(`<span style="color:#c084fc">[Подсказка]: Кликни мышью по экрану, чтобы крутить камеру вверх/вниз и вокруг.</span>`);
+            addChatMessage(`<span style="color:#c084fc">[Подсказка]: Кликни мышью по экрану для обзора на 360°. [F] — сесть в машину.</span>`);
         }
 
         function addChatMessage(html) {
@@ -270,7 +307,6 @@
             keys[e.code] = true;
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-
         function loop() {
             requestAnimationFrame(loop);
 
@@ -306,7 +342,7 @@
             }
 
             let target = currentCar || player;
-            let dist = 11;
+            let dist = 10.5;
             let camX = target.x - Math.sin(camYaw) * Math.cos(camPitch) * dist;
             let camY = 1.8 + Math.sin(camPitch) * dist;
             let camZ = target.z - Math.cos(camYaw) * Math.cos(camPitch) * dist;
@@ -324,8 +360,8 @@
             ctx.fillRect(0, Math.max(0, horizonY), W, H);
 
             drawBox(0, 0, 0, 18, 0.03, 240, 0, '#64748b', '#94a3b8', camX, camY, camZ);
-            drawBox(0, 0.03, 0, 13, 0.04, 240, 0, '#0f172a', '#1e293b', camX, camY, camZ);
-            drawBox(0, 0.03, 0, 240, 0.04, 13, 0, '#0f172a', '#1e293b', camX, camY, camZ);
+            drawBox(0, 0.03, 0, 13, 0.04, 240, 0, '#0f172a', texAsphalt, camX, camY, camZ);
+            drawBox(0, 0.03, 0, 240, 0.04, 13, 0, '#0f172a', texAsphalt, camX, camY, camZ);
             for (let z = -100; z <= 100; z += 14) {
                 if (Math.abs(z) > 10) drawBox(0, 0.08, z, 0.35, 0.02, 5, 0, '#facc15', '#facc15', camX, camY, camZ);
             }
@@ -333,7 +369,7 @@
             let renderList = [];
             buildings.forEach(b => {
                 let p = project(b.x, b.h / 2, b.z, camX, camY, camZ);
-                if (p) renderList.push({ z: p.z, draw: () => drawBox(b.x, 0, b.z, b.w, b.h, b.d, 0, b.color, b.top, camX, camY, camZ, b.windows) });
+                if (p) renderList.push({ z: p.z, draw: () => drawBox(b.x, 0, b.z, b.w, b.h, b.d, 0, b.side, b.top, camX, camY, camZ) });
             });
 
             trees.forEach(t => {
@@ -347,8 +383,9 @@
             cars.forEach(c => {
                 let p = project(c.x, 1, c.z, camX, camY, camZ);
                 if (p) renderList.push({ z: p.z, draw: () => {
+                    drawBox(c.x, 0.05, c.z, 2.4, 0.02, 4.6, c.angle, 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.45)', camX, camY, camZ);
                     drawBox(c.x, 0.35, c.z, 2.2, 0.65, 4.4, c.angle, c.color, c.roof, camX, camY, camZ);
-                    drawBox(c.x, 1.0, c.z, 1.8, 0.55, 2.2, c.angle, '#020617', '#1e293b', camX, camY, camZ);
+                    drawBox(c.x, 1.0, c.z, 1.8, 0.55, 2.2, c.angle, '#0f172a', '#38bdf8', camX, camY, camZ);
                     let fx = c.x + Math.sin(c.angle) * 2.22;
                     let fz = c.z + Math.cos(c.angle) * 2.22;
                     drawBox(fx, 0.55, fz, 1.6, 0.2, 0.1, c.angle, '#fef08a', '#fef08a', camX, camY, camZ);
@@ -359,23 +396,30 @@
                 let p = project(player.x, 1, player.z, camX, camY, camZ);
                 if (p) renderList.push({ z: p.z, draw: () => {
                     let swing = Math.sin(player.walkTime) * 0.35;
-                    drawBox(player.x - 0.18, 0, player.z + swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
-                    drawBox(player.x + 0.18, 0, player.z - swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
-                    drawBox(player.x, 0.8, player.z, 0.75, 0.9, 0.38, player.angle, '#1d4ed8', '#3b82f6', camX, camY, camZ);
+                    let cos = Math.cos(player.angle), sin = Math.sin(player.angle);
+                    drawBox(player.x, 0.05, player.z, 0.9, 0.02, 0.9, player.angle, 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.4)', camX, camY, camZ);
+                    drawBox(player.x - 0.18 * cos, 0, player.z + 0.18 * sin + swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
+                    drawBox(player.x + 0.18 * cos, 0, player.z - 0.18 * sin - swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
+                    drawBox(player.x, 0.8, player.z, 0.75, 0.9, 0.38, player.angle, texZombieClothes, '#3b82f6', camX, camY, camZ);
+                    drawBox(player.x - 0.48 * cos + sin * 0.25, 1.35, player.z + 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
+                    drawBox(player.x + 0.48 * cos + sin * 0.25, 1.35, player.z - 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
                     drawBox(player.x, 1.7, player.z, 0.5, 0.5, 0.5, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
-                    let headPos = project(player.x, 2.45, player.z, camX, camY, camZ);
+                    drawBox(player.x + sin * 0.26, 1.92, player.z + cos * 0.26, 0.32, 0.08, 0.05, player.angle, '#ef4444', '#ef4444', camX, camY, camZ);
+
+                    let headPos = project(player.x, 2.5, player.z, camX, camY, camZ);
                     if (headPos) {
                         ctx.fillStyle = 'white';
                         ctx.font = 'bold 13px Segoe UI';
                         ctx.textAlign = 'center';
-                         ctx.fillText(playerNick, headPos.x, headPos.y);
-                        }
-                         }});
-                        }
-                         renderList.sort((a, b) => b.z - a.z);
-                         renderList.forEach(item => item.draw());
-                        }
-                         loop();
-            </script>
+                        ctx.fillText(playerNick, headPos.x, headPos.y);
+                    }
+                }});
+            }
+
+            renderList.sort((a, b) => b.z - a.z);
+            renderList.forEach(item => item.draw());
+        }
+        loop();
+    </script>
 </body>
 </html>
