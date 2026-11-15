@@ -19,19 +19,17 @@
         .auth-panel {
             position: absolute; top: 28px; left: 28px;
             background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px);
-            border: 1px solid rgba(168, 85, 247, 0.4);
-            border-radius: 18px; padding: 18px 20px; width: 300px;
+            border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 18px; padding: 18px 20px; width: 300px;
         }
         .auth-panel label { display: block; font-size: 11px; color: #c084fc; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
         .auth-panel input {
             width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 10px;
             padding: 10px 12px; color: white; font-size: 14px; outline: none; margin-bottom: 12px;
         }
-        .auth-panel input:focus { border-color: #a855f7; }
         #auth-msg { color: #f87171; font-size: 12px; min-height: 16px; }
+
         .play-panel {
-            position: absolute; bottom: 28px; right: 28px;
-            display: flex; align-items: center; gap: 12px;
+            position: absolute; bottom: 28px; right: 28px; display: flex; align-items: center; gap: 12px;
             background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px; padding: 12px 16px;
         }
@@ -43,7 +41,6 @@
             background: linear-gradient(135deg, #9333ea, #4f46e5); color: white; border: none;
             padding: 14px 34px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer;
         }
-        .play-panel button:hover { filter: brightness(1.15); }
 
         #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
         #badge {
@@ -67,7 +64,7 @@
         #labels-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
         .player-tag {
             position: absolute; transform: translate(-50%, -100%);
-            background: rgba(0,0,0,0.6); color: white; padding: 3px 8px; border-radius: 6px;
+            background: rgba(0,0,0,0.65); color: white; padding: 3px 8px; border-radius: 6px;
             font-size: 12px; font-weight: bold; white-space: nowrap;
         }
     </style>
@@ -79,13 +76,11 @@
             <label>Игровой ник</label>
             <input type="text" id="nick-input" placeholder="Например: Domik_Brane" maxlength="20">
             <label>Пароль от аккаунта</label>
-            <input type="password" id="pass-input" placeholder="Придумайте или введите пароль" maxlength="32">
+            <input type="password" id="pass-input" placeholder="Введите пароль" maxlength="32">
             <div id="auth-msg"></div>
         </div>
         <div class="play-panel">
-            <select id="server-select">
-                <option value="Test Server #1">Test Server #1 (Онлайн)</option>
-            </select>
+            <select id="server-select"><option value="Test Server #1">Test Server #1 (Three.js)</option></select>
             <button onclick="loginAndPlay()">ВОЙТИ В ИГРУ</button>
         </div>
     </div>
@@ -104,137 +99,189 @@
         </div>
     </div>
 
-    <canvas id="glCanvas"></canvas>
+    <script src="./three.min.js"></script>
+    <script src="./GLTFLoader.js"></script>
     <script>
-        const canvas = document.getElementById('glCanvas');
-        const gl = canvas.getContext('webgl');
-        let W, H;
-        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; gl.viewport(0, 0, W, H); }
-        window.addEventListener('resize', resize);
-        resize();
-
-        const vs = `
-            attribute vec3 aPos, aNorm; attribute vec2 aUV;
-            uniform mat4 uProj, uView, uModel; uniform vec2 uUVScale;
-            varying vec3 vNorm; varying vec2 vUV;
-            void main() {
-                gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
-                vNorm = mat3(uModel) * aNorm; vUV = aUV * uUVScale;
-            }
-        `;
-        const fs = `
-            precision mediump float;
-            varying vec3 vNorm; varying vec2 vUV;
-            uniform sampler2D uTex; uniform vec3 uTint;
-            void main() {
-                vec3 sun = normalize(vec3(0.4, 0.9, 0.3));
-                float light = max(dot(normalize(vNorm), sun), 0.0) * 0.6 + 0.45;
-                gl_FragColor = vec4(texture2D(uTex, vUV).rgb * uTint * light, 1.0);
-            }
-        `;
-        function makeShader(t, s) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; }
-        const prog = gl.createProgram();
-        gl.attachShader(prog, makeShader(gl.VERTEX_SHADER, vs));
-        gl.attachShader(prog, makeShader(gl.FRAGMENT_SHADER, fs));
-        gl.linkProgram(prog); gl.useProgram(prog); gl.enable(gl.DEPTH_TEST);
-
-        function createTex(grid) {
-            const c = document.createElement('canvas'); c.width = 128; c.height = 128;
-            const g = c.getContext('2d');
-            if (grid) {
-                g.fillStyle = '#334155'; g.fillRect(0, 0, 128, 128);
-                g.fillStyle = '#3b4a61'; g.fillRect(0, 0, 64, 64); g.fillRect(64, 64, 64, 64);
-                g.strokeStyle = 'rgba(255,255,255,0.15)'; g.strokeRect(0, 0, 128, 128);
-            } else { g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 128); }
-            const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            return t;
-        }
-        const texGrid = createTex(true), texSolid = createTex(false);
-
-        const boxData = new Float32Array([
-            -0.5,-0.5,0.5,0,0,1,0,1, 0.5,-0.5,0.5,0,0,1,1,1, 0.5,0.5,0.5,0,0,1,1,0, -0.5,-0.5,0.5,0,0,1,0,1, 0.5,0.5,0.5,0,0,1,1,0, -0.5,0.5,0.5,0,0,1,0,0,
-            0.5,-0.5,-0.5,0,0,-1,0,1, -0.5,-0.5,-0.5,0,0,-1,1,1, -0.5,0.5,-0.5,0,0,-1,1,0, 0.5,-0.5,-0.5,0,0,-1,0,1, -0.5,0.5,-0.5,0,0,-1,1,0, 0.5,0.5,-0.5,0,0,-1,0,0,
-            -0.5,0.5,0.5,0,1,0,0,1, 0.5,0.5,0.5,0,1,0,1,1, 0.5,0.5,-0.5,0,1,0,1,0, -0.5,0.5,0.5,0,1,0,0,1, 0.5,0.5,-0.5,0,1,0,1,0, -0.5,0.5,-0.5,0,1,0,0,0,
-            -0.5,-0.5,-0.5,0,-1,0,0,1, 0.5,-0.5,-0.5,0,-1,0,1,1, 0.5,-0.5,0.5,0,-1,0,1,0, -0.5,-0.5,-0.5,0,-1,0,0,1, 0.5,-0.5,0.5,0,-1,0,1,0, -0.5,-0.5,0.5,0,-1,0,0,0,
-            0.5,-0.5,0.5,1,0,0,0,1, 0.5,-0.5,-0.5,1,0,0,1,1, 0.5,0.5,-0.5,1,0,0,1,0, 0.5,-0.5,0.5,1,0,0,0,1, 0.5,0.5,-0.5,1,0,0,1,0, 0.5,0.5,0.5,1,0,0,0,0,
-            -0.5,-0.5,-0.5,-1,0,0,0,1, -0.5,-0.5,0.5,-1,0,0,1,1, -0.5,0.5,0.5,-1,0,0,1,0, -0.5,-0.5,-0.5,-1,0,0,0,1, -0.5,0.5,0.5,-1,0,0,1,0, -0.5,0.5,-0.5,-1,0,0,0,0
-        ]);
-        const vbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.bufferData(gl.ARRAY_BUFFER, boxData, gl.STATIC_DRAW);
-
-        const sphereVerts = [];
-        for (let lat = 0; lat < 10; lat++) {
-            const t1 = lat * Math.PI / 10, t2 = (lat + 1) * Math.PI / 10;
-            for (let lon = 0; lon < 14; lon++) {
-                const p1 = lon * 2 * Math.PI / 14, p2 = (lon + 1) * 2 * Math.PI / 14;
-                const pt = (t, p) => [Math.sin(t)*Math.cos(p), Math.cos(t), Math.sin(t)*Math.sin(p)];
-                const a = pt(t1, p1), b = pt(t2, p1), c = pt(t2, p2), d = pt(t1, p2);
-                [a, b, c, a, c, d].forEach(v => sphereVerts.push(v.at(0)*0.5, v.at(1)*0.5, v.at(2)*0.5, v.at(0), v.at(1), v.at(2), 0.5, 0.5));
-            }
-        }
-        const sphereVbo = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphereVerts), gl.STATIC_DRAW);
-        const aPos = gl.getAttribLocation(prog, 'aPos'), aNorm = gl.getAttribLocation(prog, 'aNorm'), aUV = gl.getAttribLocation(prog, 'aUV');
-        gl.enableVertexAttribArray(aPos); gl.enableVertexAttribArray(aNorm); gl.enableVertexAttribArray(aUV);
-        const uProj = gl.getUniformLocation(prog, 'uProj'), uView = gl.getUniformLocation(prog, 'uView'), uModel = gl.getUniformLocation(prog, 'uModel'), uUVScale = gl.getUniformLocation(prog, 'uUVScale'), uTint = gl.getUniformLocation(prog, 'uTint');
-
-        function drawBox(x, y, z, sx, sy, sz, rotY, tex, r, g, b, uv = 1) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
-            const c = Math.cos(rotY), s = Math.sin(rotY);
-            gl.uniformMatrix4fv(uModel, false, new Float32Array([sx*c,0,-sx*s,0, 0,sy,0,0, sz*s,0,sz*c,0, x,y,z,1]));
-            gl.uniform2f(uUVScale, uv, uv); gl.uniform3f(uTint, r, g, b); gl.bindTexture(gl.TEXTURE_2D, tex); gl.drawArrays(gl.TRIANGLES, 0, 36);
-        }
-
-        function drawPart(x, y, z, sx, sy, sz, rotY, rotX, r, g, b) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo);
-            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
-            const cy = Math.cos(rotY), sy_ = Math.sin(rotY), cx = Math.cos(rotX), sx_ = Math.sin(rotX);
-            gl.uniformMatrix4fv(uModel, false, new Float32Array([sx*cy,0,-sx*sy_,0, sy*sy_*sx_,sy*cx,sy*cy*sx_,0, sz*sy_*cx,-sz*sx_,sz*cy*cx,0, x,y,z,1]));
-            gl.uniform2f(uUVScale, 1, 1); gl.uniform3f(uTint, r, g, b); gl.bindTexture(gl.TEXTURE_2D, texSolid); gl.drawArrays(gl.TRIANGLES, 0, sphereVerts.length / 8);
-        }
-
-        function drawDetailedCar(cx, cz, ang, r, g, b) {
-            const c = Math.cos(ang), s = Math.sin(ang);
-            const put = (ox, oy, oz, sx, sy, sz, cr, cg, cb) => {
-                drawBox(cx + ox*c + oz*s, oy, cz - ox*s + oz*c, sx, sy, sz, ang, texSolid, cr, cg, cb);
-            };
-            put(0, 0.45, 0, 2.05, 0.42, 4.5, r, g, b);
-            put(0, 0.68, 1.45, 1.95, 0.25, 1.4, r*0.95, g*0.95, b*0.95);
-            put(0, 0.70, -1.6, 1.95, 0.28, 1.1, r*0.95, g*0.95, b*0.95);
-            put(0, 1.05, -0.15, 1.68, 0.52, 2.0, 0.08, 0.11, 0.16);
-            put(0, 1.32, -0.15, 1.62, 0.08, 1.85, r, g, b);
-            put(0, 0.96, -2.05, 1.85, 0.07, 0.28, 0.1, 0.1, 0.12);
-            put(0, 0.35, 2.28, 2.08, 0.24, 0.16, 0.12, 0.12, 0.14);
-            put(-0.68, 0.58, 2.26, 0.42, 0.16, 0.08, 1.0, 0.96, 0.75);
-            put(0.68, 0.58, 2.26, 0.42, 0.16, 0.08, 1.0, 0.96, 0.75);
-            put(-0.68, 0.62, -2.26, 0.45, 0.15, 0.08, 0.95, 0.12, 0.12);
-            put(0.68, 0.62, -2.26, 0.45, 0.15, 0.08, 0.95, 0.12, 0.12);
-            [-0.98, 0.98].forEach(wx => [-1.35, 1.35].forEach(wz => {
-                put(wx, 0.36, wz, 0.32, 0.72, 0.72, 0.08, 0.08, 0.09);
-                put(wx * 1.04, 0.36, wz, 0.1, 0.42, 0.42, 0.75, 0.78, 0.82);
-            }));
-        }
         const DB_URL = "https://" + "test-83342-default-rtdb" + ".firebaseio.com";
 
-        let myNick = "", started = false, chatOpen = false;
-        let camYaw = 0, camPitch = 0.25, camDist = 4.2, dragging = false;
-        let carMode = "none";
-        let hostNick = "";
-        let lastProj = null, lastView = null;
+        // Сцена, камера, рендерер с мягкими тенями
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ceeb, 40, 180);
 
-        const player = { x: -2.5, y: 0, z: 0, vy: 0, angle: Math.PI, walk: 0 };
-        const myCar = { x: 2.5, z: 0, angle: Math.PI, speed: 0 };
-        let remotePlayers = {};
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.2, 250);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Солнечный свет и окружение
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.7);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(30, 50, 25);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // Тестовый пол с координатной сеткой
+        const floorGeo = new THREE.PlaneGeometry(250, 250);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const gridHelper = new THREE.GridHelper(250, 100, 0x64748b, 0x475569);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // Загрузчик твоей 3D-машины car.glb (с авто-масштабированием под размер игрока)
+        const gltfLoader = new THREE.GLTFLoader();
+        let carTemplate = null;
+
+        function createFallbackCar(hexColor) {
+            const grp = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.65, 4.3), new THREE.MeshStandardMaterial({ color: hexColor, roughness: 0.3, metalness: 0.6 }));
+            body.position.y = 0.55; body.castShadow = true;
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.5, 2.0), new THREE.MeshStandardMaterial({ color: 0x111827 }));
+            cabin.position.set(0, 1.1, -0.2); cabin.castShadow = true;
+            grp.add(body, cabin);
+            return grp;
+        }
+
+        const myCarMesh = new THREE.Group();
+        myCarMesh.position.set(3, 0, 0);
+        scene.add(myCarMesh);
+
+        gltfLoader.load('./car.glb', (gltf) => {
+            const model = gltf.scene;
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 4.4 / (maxDim || 1); // Подгоняем длину любой скачанной машины под 4.4 метра
+            model.scale.set(scale, scale, scale);
+
+            const scaledBox = new THREE.Box3().setFromObject(model);
+            model.position.y = -scaledBox.min.y; // Ставим колёсами ровно на асфальт
+            model.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+
+            carTemplate = model;
+            myCarMesh.add(carTemplate.clone());
+        }, undefined, () => {
+            myCarMesh.add(createFallbackCar(0x7c3aed));
+        });
+        function createHumanModel(hoodieColorHex) {
+            const root = new THREE.Group();
+            const matHoodie = new THREE.MeshStandardMaterial({ color: hoodieColorHex, roughness: 0.7 });
+            const matSkin = new THREE.MeshStandardMaterial({ color: 0xc48f70, roughness: 0.6 });
+            const matJeans = new THREE.MeshStandardMaterial({ color: 0x171923, roughness: 0.8 });
+            const matWhite = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4 });
+            const matGlove = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.5 });
+
+            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.20, 0.58, 12), matHoodie);
+            torso.position.y = 1.24; torso.castShadow = true;
+            const tee = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.21, 0.12, 12), matWhite);
+            tee.position.y = 0.92; tee.castShadow = true;
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), matSkin);
+            head.position.set(0, 1.68, 0.02); head.castShadow = true;
+            const hood = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 14), matHoodie);
+            hood.position.set(0, 1.70, -0.02); hood.castShadow = true;
+
+            function makeArm(side) {
+                const shoulder = new THREE.Group();
+                shoulder.position.set(side * 0.26, 1.48, 0);
+                const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.28, 10), matHoodie);
+                upper.position.y = -0.14; upper.castShadow = true;
+
+                const elbow = new THREE.Group();
+                elbow.position.y = -0.28;
+                const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.045, 0.26, 10), matHoodie);
+                fore.position.y = -0.13; fore.castShadow = true;
+                const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), matGlove);
+                hand.position.y = -0.27;
+
+                elbow.add(fore, hand);
+                shoulder.add(upper, elbow);
+                return { shoulder, elbow };
+            }
+
+            function makeLeg(side) {
+                const hip = new THREE.Group();
+                hip.position.set(side * 0.11, 0.88, 0);
+                const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.085, 0.42, 10), matJeans);
+                thigh.position.y = -0.21; thigh.castShadow = true;
+
+                const knee = new THREE.Group();
+                knee.position.y = -0.42;
+                const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.08, 0.40, 10), matJeans);
+                shin.position.y = -0.20; shin.castShadow = true;
+                const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, 0.26), matWhite);
+                shoe.position.set(0, -0.41, 0.05); shoe.castShadow = true;
+
+                knee.add(shin, shoe);
+                hip.add(thigh, knee);
+                return { hip, knee };
+            }
+
+            const armL = makeArm(-1), armR = makeArm(1);
+            const legL = makeLeg(-1), legR = makeLeg(1);
+            root.add(torso, tee, head, hood, armL.shoulder, armR.shoulder, legL.hip, legR.hip);
+            root.userData = { armL, armR, legL, legR };
+            return root;
+        }
+
+        function animateHuman(mesh, walk, isAir) {
+            const { armL, armR, legL, legR } = mesh.userData;
+            if (isAir) {
+                legL.hip.rotation.x = -0.45; legL.knee.rotation.x = 0.75;
+                legR.hip.rotation.x = -0.15; legR.knee.rotation.x = 0.45;
+                armL.shoulder.rotation.x = -0.25; armL.elbow.rotation.x = -0.85;
+                armR.shoulder.rotation.x = 0.20;  armR.elbow.rotation.x = -0.75;
+            } else if (walk > 0.01) {
+                const s = Math.sin(walk);
+                legL.hip.rotation.x = s * 0.48;
+                legR.hip.rotation.x = -s * 0.48;
+                legL.knee.rotation.x = Math.max(0, -Math.sin(walk - 0.5)) * 0.85 + 0.1;
+                legR.knee.rotation.x = Math.max(0, Math.sin(walk - 0.5)) * 0.85 + 0.1;
+
+                armL.shoulder.rotation.x = -s * 0.42;
+                armR.shoulder.rotation.x = s * 0.42;
+                armL.elbow.rotation.x = -(0.35 + Math.max(0, s) * 0.55);
+                armR.elbow.rotation.x = -(0.35 + Math.max(0, -s) * 0.55);
+            } else {
+                const idle = Math.sin(Date.now() * 0.0025) * 0.03;
+                legL.hip.rotation.x = 0; legL.knee.rotation.x = 0;
+                legR.hip.rotation.x = 0; legR.knee.rotation.x = 0;
+                armL.shoulder.rotation.x = idle; armL.elbow.rotation.x = -0.25;
+                armR.shoulder.rotation.x = -idle; armR.elbow.rotation.x = -0.25;
+            }
+        }
+
+        const myPlayerMesh = createHumanModel(0x1e2538);
+        myPlayerMesh.position.set(-2.5, 0, 0);
+        scene.add(myPlayerMesh);
+
+        let myNick = "", started = false, chatOpen = false;
+        let camYaw = 0, camPitch = 0.28, camDist = 4.5, dragging = false;
+        let carMode = "none", hostNick = "", vy = 0, walkTime = 0, carSpeed = 0;
+        let remoteEntities = {};
         let lastChatId = "";
 
         async function loginAndPlay() {
             const nick = document.getElementById('nick-input').value.trim();
             const pass = document.getElementById('pass-input').value.trim();
             const msg = document.getElementById('auth-msg');
-
             if (nick.length < 3 || pass.length < 3) {
-                msg.style.color = "#f87171";
                 msg.innerText = "Введите ник и пароль (минимум 3 символа)!";
                 return;
             }
@@ -244,7 +291,6 @@
             try {
                 const res = await fetch(DB_URL + "/users/" + encodeURIComponent(nick) + ".json");
                 const userData = await res.json();
-
                 if (userData && userData.password !== pass) {
                     msg.style.color = "#f87171";
                     msg.innerText = "Неверный пароль от этого аккаунта!";
@@ -269,7 +315,6 @@
             addChat(`<span style="color:#facc15">[Сервер]: Вы вошли как ${myNick}!</span>`);
             sendChatOnline(`<span style="color:#4ade80">[Сервер]: ${myNick} подключился к серверу.</span>`);
         }
-
         function addChat(html) {
             const log = document.getElementById('chat-log');
             log.innerHTML += `<div>${html}</div>`;
@@ -290,8 +335,9 @@
                 await fetch(DB_URL + "/online/" + encodeURIComponent(myNick) + ".json", {
                     method: 'PUT',
                     body: JSON.stringify({
-                        x: player.x, y: player.y, z: player.z, angle: player.angle, walk: player.walk,
-                        carMode: carMode, carX: myCar.x, carZ: myCar.z, carAng: myCar.angle, ts: Date.now()
+                        x: myPlayerMesh.position.x, y: myPlayerMesh.position.y, z: myPlayerMesh.position.z,
+                        angle: myPlayerMesh.rotation.y, walk: walkTime, carMode: carMode,
+                        carX: myCarMesh.position.x, carZ: myCarMesh.position.z, carAng: myCarMesh.rotation.y, ts: Date.now()
                     })
                 });
                 const [pRes, cRes] = await Promise.all([
@@ -300,10 +346,34 @@
                 ]);
                 const pData = await pRes.json() || {};
                 const now = Date.now();
-                remotePlayers = {};
-                for (let [k, v] of Object.entries(pData)) {
-                    if (k !== myNick && v && now - v.ts < 8000) remotePlayers[k] = v;
+
+                for (let k of Object.keys(remoteEntities)) {
+                    if (!pData[k] || now - pData[k].ts > 8000) {
+                        scene.remove(remoteEntities[k].human);
+                        scene.remove(remoteEntities[k].car);
+                        delete remoteEntities[k];
+                    }
                 }
+
+                for (let [k, v] of Object.entries(pData)) {
+                    if (k === myNick || !v || now - v.ts > 8000) continue;
+                    if (!remoteEntities[k]) {
+                        const h = createHumanModel(0x4c1d95);
+                        const c = carTemplate ? carTemplate.clone() : createFallbackCar(0x10b981);
+                        scene.add(h, c);
+                        remoteEntities[k] = { human: h, car: c, data: v };
+                    }
+                    const ent = remoteEntities[k];
+                    ent.data = v;
+                    ent.human.position.set(v.x, v.y, v.z);
+                    ent.human.rotation.y = v.angle;
+                    ent.human.visible = (v.carMode === "none");
+                    animateHuman(ent.human, v.walk || 0, v.y > 0.05);
+
+                    ent.car.position.set(v.carX, 0, v.carZ);
+                    ent.car.rotation.y = v.carAng;
+                }
+
                 const cData = await cRes.json();
                 if (cData) {
                     const id = Object.keys(cData).at(0);
@@ -314,16 +384,22 @@
                 }
             } catch (e) {}
         }, 250);
-        canvas.addEventListener('mousedown', () => { dragging = true; if (started && !chatOpen && canvas.requestPointerLock) canvas.requestPointerLock(); });
+
+        renderer.domElement.addEventListener('mousedown', () => {
+            dragging = true;
+            if (started && !chatOpen && renderer.domElement.requestPointerLock) renderer.domElement.requestPointerLock();
+        });
         window.addEventListener('mouseup', () => { dragging = false; });
         window.addEventListener('mousemove', (e) => {
             if (!started || chatOpen) return;
-            if (document.pointerLockElement === canvas || dragging) {
+            if (document.pointerLockElement === renderer.domElement || dragging) {
                 camYaw -= e.movementX * 0.005;
                 camPitch = Math.max(-0.05, Math.min(1.15, camPitch + e.movementY * 0.004));
             }
         });
-        window.addEventListener('wheel', (e) => { if (started) camDist = Math.max(2.5, Math.min(14, camDist + e.deltaY * 0.005)); });
+        window.addEventListener('wheel', (e) => {
+            if (started) camDist = Math.max(2.5, Math.min(15, camDist + e.deltaY * 0.005));
+        });
 
         const keys = {};
         window.addEventListener('keydown', (e) => {
@@ -347,159 +423,43 @@
             }
 
             if (e.code === 'KeyF') {
-                if (carMode === "none" && Math.hypot(player.x - myCar.x, player.z - myCar.z) < 4) {
+                if (carMode === "none" && myPlayerMesh.position.distanceTo(myCarMesh.position) < 4.2) {
                     carMode = "driver";
+                    myPlayerMesh.visible = false;
                     sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел за руль автомобиля</span>`);
                 } else if (carMode !== "none") {
                     carMode = "none";
-                    player.x -= 2.2;
+                    myPlayerMesh.visible = true;
+                    myPlayerMesh.position.x -= 2.2;
                     sendChatOnline(`<span style="color:#f472b6">* ${myNick} вышел из автомобиля</span>`);
                 }
             }
 
             if (e.code === 'KeyG' && carMode === "none") {
-                for (let [rNick, rp] of Object.entries(remotePlayers)) {
-                    if (Math.hypot(player.x - rp.carX, player.z - rp.carZ) < 4.5) {
+                for (let [rNick, ent] of Object.entries(remoteEntities)) {
+                    if (myPlayerMesh.position.distanceTo(ent.car.position) < 4.5) {
                         carMode = "passenger";
                         hostNick = rNick;
-                        sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел на пассажирское место к ${rNick}</span>`);
+                        myPlayerMesh.visible = false;
+                        sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел пассажиром к ${rNick}</span>`);
                         break;
                     }
                 }
             }
 
             if (e.code === 'KeyH' && carMode === "none") {
-                for (let [rNick, rp] of Object.entries(remotePlayers)) {
-                    if (Math.hypot(player.x - rp.x, player.z - rp.z) < 3.5) {
+                for (let [rNick, ent] of Object.entries(remoteEntities)) {
+                    if (myPlayerMesh.position.distanceTo(ent.human.position) < 3.5) {
                         sendChatOnline(`<span style="color:#f472b6">* ${myNick} пожал руку игроку ${rNick}</span>`);
                         break;
                     }
                 }
             }
-
             keys[e.code] = true;
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-
-        function setCamera(eyeX, eyeY, eyeZ, tx, ty, tz) {
-            const f = 1.0 / Math.tan(0.5), aspect = W / H, near = 0.2, far = 250;
-            lastProj = new Float32Array([f/aspect,0,0,0, 0,f,0,0, 0,0,(far+near)/(near-far),-1, 0,0,(2*far*near)/(near-far),0]);
-            gl.uniformMatrix4fv(uProj, false, lastProj);
-
-            let zx = eyeX - tx, zy = eyeY - ty, zz = eyeZ - tz, zl = Math.hypot(zx, zy, zz);
-            zx /= zl; zy /= zl; zz /= zl;
-            let xx = zz, xz = -zx, xl = Math.hypot(xx, xz) || 1; xx /= xl; xz /= xl;
-            let yx = zy * xz, yy = zz * xx - zx * xz, yz = -zy * xx;
-            lastView = new Float32Array([xx,yx,zx,0, 0,yy,0,0, xz,yz,zz,0, -(xx*eyeX+xz*eyeZ), -(yx*eyeX+yy*eyeY+yz*eyeZ), -(zx*eyeX+zy*eyeY+zz*eyeZ), 1]);
-            gl.uniformMatrix4fv(uView, false, lastView);
-        }
-
-        function toScreen(wx, wy, wz) {
-            if (!lastView || !lastProj) return null;
-            const vx = lastView.at(0)*wx + lastView.at(4)*wy + lastView.at(8)*wz + lastView.at(12);
-            const vy = lastView.at(1)*wx + lastView.at(5)*wy + lastView.at(9)*wz + lastView.at(13);
-            const vz = lastView.at(2)*wx + lastView.at(6)*wy + lastView.at(10)*wz + lastView.at(14);
-            if (vz >= -0.2) return null;
-            const px = lastProj.at(0)*vx, py = lastProj.at(5)*vy, pw = -vz;
-            return { x: (px / pw * 0.5 + 0.5) * W, y: (-py / pw * 0.5 + 0.5) * H };
-        }
-        function drawHuman(hx, hy, hz, ang, walk, r, g, b) {
-            const isAir = hy > 0.04;
-            const isMoving = walk > 0.01 && !isAir;
-            const cycle = walk;
-            const bob = isMoving ? Math.abs(Math.cos(cycle)) * 0.025 : Math.sin(Date.now() * 0.0025) * 0.008;
-
-            const pc = Math.cos(ang), ps = Math.sin(ang);
-            const p = (ox, oy, oz, sx, sy, sz, rx, cr, cg, cb) => {
-                drawPart(hx + ox * pc + oz * ps, hy + bob + oy, hz - ox * ps + oz * pc, sx, sy, sz, ang, rx, cr, cg, cb);
-            };
-
-            const skin = [0.76, 0.56, 0.44];
-            const beard = [0.12, 0.09, 0.08];
-            const hoodie = [r, g, b];
-            const whiteTee = [0.92, 0.92, 0.94];
-            const jeans = [0.09, 0.10, 0.13];
-            const glove = [0.08, 0.08, 0.09];
-            const shoes = [0.95, 0.95, 0.97];
-
-            let lean = isAir ? 0.14 : (isMoving ? 0.08 : 0.0);
-            let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0;
-            let shL = 0, shR = 0, elbL = 0.25, elbR = 0.25;
-
-            if (isAir) {
-                hipL = -0.45; kneeL = 0.75;
-                hipR = -0.15; kneeR = 0.45;
-                shL = -0.25;  elbL = 0.85;
-                shR = 0.20;   elbR = 0.75;
-            } else if (isMoving) {
-                hipL = Math.sin(cycle) * 0.48;
-                hipR = -Math.sin(cycle) * 0.48;
-                kneeL = Math.max(0, -Math.sin(cycle - 0.5)) * 0.85 + 0.12;
-                kneeR = Math.max(0, Math.sin(cycle - 0.5)) * 0.85 + 0.12;
-
-                shL = -Math.sin(cycle) * 0.42;
-                shR = Math.sin(cycle) * 0.42;
-                elbL = 0.35 + Math.max(0, Math.sin(cycle)) * 0.55;
-                elbR = 0.35 + Math.max(0, -Math.sin(cycle)) * 0.55;
-            } else {
-                shL = Math.sin(Date.now() * 0.0025) * 0.03;
-                shR = -shL;
-            }
-
-            const headZ = 0.02 + Math.sin(lean) * 0.25;
-            p(0, 1.72, headZ, 0.22, 0.26, 0.23, 0, skin.at(0), skin.at(1), skin.at(2));
-            p(0, 1.65, headZ + 0.06, 0.16, 0.12, 0.14, 0, beard.at(0), beard.at(1), beard.at(2));
-            p(-0.045, 1.74, headZ + 0.10, 0.028, 0.02, 0.02, 0, 0.08, 0.08, 0.08);
-            p(0.045, 1.74, headZ + 0.10, 0.028, 0.02, 0.02, 0, 0.08, 0.08, 0.08);
-            p(0, 1.74, headZ - 0.04, 0.285, 0.31, 0.29, -0.05, hoodie.at(0), hoodie.at(1), hoodie.at(2));
-            p(0, 1.56, headZ, 0.16, 0.16, 0.16, 0, whiteTee.at(0), whiteTee.at(1), whiteTee.at(2));
-
-            p(0, 1.37, Math.sin(lean) * 0.14, 0.48, 0.38, 0.27, lean, hoodie.at(0), hoodie.at(1), hoodie.at(2));
-            p(0, 1.15, Math.sin(lean) * 0.06, 0.42, 0.32, 0.25, lean, hoodie.at(0) * 0.95, hoodie.at(1) * 0.95, hoodie.at(2) * 0.95);
-            p(0, 0.98, 0, 0.40, 0.12, 0.24, 0, whiteTee.at(0), whiteTee.at(1), whiteTee.at(2));
-            p(0, 0.91, 0, 0.38, 0.08, 0.23, 0, 0.1, 0.1, 0.11);
-
-            const drawArm = (side, shAng, elbAng) => {
-                const ox = side * 0.27;
-                const shY = 1.41, shZ = Math.sin(lean) * 0.16;
-                const upperLen = 0.28, foreLen = 0.26;
-                const elbY = shY - Math.cos(shAng) * upperLen;
-                const elbZ = shZ - Math.sin(shAng) * upperLen;
-                const foreAng = shAng - elbAng;
-                const handY = elbY - Math.cos(foreAng) * foreLen;
-                const handZ = elbZ - Math.sin(foreAng) * foreLen;
-
-                p(ox, shY, shZ, 0.15, 0.15, 0.15, 0, hoodie.at(0), hoodie.at(1), hoodie.at(2));
-                p(ox * 1.04, (shY + elbY) * 0.5, (shZ + elbZ) * 0.5, 0.135, upperLen + 0.06, 0.135, shAng, hoodie.at(0), hoodie.at(1), hoodie.at(2));
-                p(ox * 1.04, elbY, elbZ, 0.12, 0.12, 0.12, 0, hoodie.at(0), hoodie.at(1), hoodie.at(2));
-                p(ox * 1.05, (elbY + handY) * 0.5, (elbZ + handZ) * 0.5, 0.115, foreLen + 0.04, 0.115, foreAng, hoodie.at(0) * 0.95, hoodie.at(1) * 0.95, hoodie.at(2) * 0.95);
-                p(ox * 1.05, handY, handZ, 0.10, 0.13, 0.10, foreAng, glove.at(0), glove.at(1), glove.at(2));
-                p(ox * 1.05, handY, handZ + 0.035, 0.08, 0.07, 0.05, foreAng, 0.85, 0.85, 0.88);
-            };
-            drawArm(-1, shL, elbL);
-            drawArm(1, shR, elbR);
-
-            const drawLeg = (side, hipAng, kneeAng) => {
-                const ox = side * 0.115;
-                const hipY = 0.88, hipZ = 0;
-                const thighLen = 0.40, shinLen = 0.38;
-                const kneeY = hipY - Math.cos(hipAng) * thighLen;
-                const kneeZ = hipZ - Math.sin(hipAng) * thighLen;
-                const shinAng = hipAng + kneeAng;
-                const ankleY = kneeY - Math.cos(shinAng) * shinLen;
-                const ankleZ = kneeZ - Math.sin(shinAng) * shinLen;
-
-                p(ox, (hipY + kneeY) * 0.5, (hipZ + kneeZ) * 0.5, 0.21, thighLen + 0.08, 0.22, hipAng, jeans.at(0), jeans.at(1), jeans.at(2));
-                p(ox, kneeY, kneeZ, 0.18, 0.16, 0.18, 0, jeans.at(0), jeans.at(1), jeans.at(2));
-                p(ox, (kneeY + ankleY) * 0.5, (kneeZ + ankleZ) * 0.5, 0.19, shinLen + 0.06, 0.20, shinAng, jeans.at(0), jeans.at(1), jeans.at(2));
-                p(ox, ankleY - 0.03, ankleZ + 0.06, 0.16, 0.13, 0.30, 0, shoes.at(0), shoes.at(1), shoes.at(2));
-            };
-            drawLeg(-1, hipL, kneeL);
-            drawLeg(1, hipR, kneeR);
-        }
-
-        function loop() {
-            requestAnimationFrame(loop);
+        function animate() {
+            requestAnimationFrame(animate);
 
             if (started && !chatOpen) {
                 if (carMode === "none") {
@@ -510,70 +470,72 @@
                     if (keys['KeyS']) { dx -= fwdX; dz -= fwdZ; }
                     if (keys['KeyD']) { dx += rightX; dz += rightZ; }
                     if (keys['KeyA']) { dx -= rightX; dz -= rightZ; }
+
                     const len = Math.hypot(dx, dz);
                     if (len > 0) {
                         const spd = keys['ShiftLeft'] ? 0.18 : 0.095;
-                        player.x += (dx / len) * spd; player.z += (dz / len) * spd;
-                        player.angle = Math.atan2(dx, dz); player.walk += spd * 0.65;
-                    } else player.walk = 0;
+                        myPlayerMesh.position.x += (dx / len) * spd;
+                        myPlayerMesh.position.z += (dz / len) * spd;
+                        myPlayerMesh.rotation.y = Math.atan2(dx, dz);
+                        walkTime += spd * 0.65;
+                    } else walkTime = 0;
 
-                    if (keys['Space'] && player.y <= 0.01) player.vy = 0.18;
-                    player.y += player.vy;
-                    if (player.y > 0) player.vy -= 0.010; else { player.y = 0; player.vy = 0; }
+                    if (keys['Space'] && myPlayerMesh.position.y <= 0.01) vy = 0.18;
+                    myPlayerMesh.position.y += vy;
+                    if (myPlayerMesh.position.y > 0) vy -= 0.010;
+                    else { myPlayerMesh.position.y = 0; vy = 0; }
+
+                    animateHuman(myPlayerMesh, walkTime, myPlayerMesh.position.y > 0.05);
                 } else if (carMode === "driver") {
-                    if (keys['KeyW']) myCar.speed = Math.min(myCar.speed + 0.018, 0.75);
-                    else if (keys['KeyS']) myCar.speed = Math.max(myCar.speed - 0.018, -0.35);
-                    else myCar.speed *= 0.96;
-                    if (Math.abs(myCar.speed) > 0.01) {
-                        const dir = myCar.speed > 0 ? 1 : -1;
-                        if (keys['KeyA']) myCar.angle += 0.04 * dir;
-                        if (keys['KeyD']) myCar.angle -= 0.04 * dir;
+                    if (keys['KeyW']) carSpeed = Math.min(carSpeed + 0.018, 0.75);
+                    else if (keys['KeyS']) carSpeed = Math.max(carSpeed - 0.018, -0.35);
+                    else carSpeed *= 0.96;
+
+                    if (Math.abs(carSpeed) > 0.01) {
+                        const dir = carSpeed > 0 ? 1 : -1;
+                        if (keys['KeyA']) myCarMesh.rotation.y += 0.04 * dir;
+                        if (keys['KeyD']) myCarMesh.rotation.y -= 0.04 * dir;
                     }
-                    myCar.x += Math.sin(myCar.angle) * myCar.speed;
-                    myCar.z += Math.cos(myCar.angle) * myCar.speed;
-                    player.x = myCar.x; player.z = myCar.z;
+                    myCarMesh.position.x += Math.sin(myCarMesh.rotation.y) * carSpeed;
+                    myCarMesh.position.z += Math.cos(myCarMesh.rotation.y) * carSpeed;
+                    myPlayerMesh.position.copy(myCarMesh.position);
                 } else if (carMode === "passenger") {
-                    const host = remotePlayers[hostNick];
+                    const host = remoteEntities[hostNick];
                     if (host) {
-                        player.x = host.carX; player.z = host.carZ;
-                    } else carMode = "none";
+                        myPlayerMesh.position.copy(host.car.position);
+                    } else { carMode = "none"; myPlayerMesh.visible = true; }
                 }
             }
 
-            const tx = carMode === "driver" ? myCar.x : player.x;
-            const ty = carMode !== "none" ? 1.1 : player.y + 1.35;
-            const tz = carMode === "driver" ? myCar.z : player.z;
+            const targetPos = carMode === "driver" ? myCarMesh.position : myPlayerMesh.position;
+            const ty = carMode !== "none" ? 1.1 : targetPos.y + 1.35;
             const d = carMode !== "none" ? camDist + 2.5 : camDist;
-            const eyeX = tx + Math.sin(camYaw) * Math.cos(camPitch) * d;
-            const eyeY = ty + Math.sin(camPitch) * d;
-            const eyeZ = tz + Math.cos(camYaw) * Math.cos(camPitch) * d;
-
-            gl.clearColor(0.55, 0.78, 0.96, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            setCamera(eyeX, eyeY, eyeZ, tx, ty, tz);
-
-            drawBox(0, -0.1, 0, 200, 0.2, 200, 0, texGrid, 1, 1, 1, 50);
-            drawDetailedCar(myCar.x, myCar.z, myCar.angle, 0.55, 0.2, 0.9);
-            if (carMode === "none") drawHuman(player.x, player.y, player.z, player.angle, player.walk, 0.14, 0.16, 0.22);
+            camera.position.set(
+                targetPos.x + Math.sin(camYaw) * Math.cos(camPitch) * d,
+                ty + Math.sin(camPitch) * d,
+                targetPos.z + Math.cos(camYaw) * Math.cos(camPitch) * d
+            );
+            camera.lookAt(targetPos.x, ty, targetPos.z);
 
             const labels = document.getElementById('labels-layer');
             labels.innerHTML = "";
-            for (let [rNick, rp] of Object.entries(remotePlayers)) {
-                drawDetailedCar(rp.carX, rp.carZ, rp.carAng, 0.15, 0.65, 0.45);
-                if (rp.carMode === "none") drawHuman(rp.x, rp.y, rp.z, rp.angle, rp.walk || 0, 0.28, 0.14, 0.18);
-
-                const pos = toScreen(rp.x, rp.y + 2.15, rp.z);
-                if (pos) {
+            for (let [rNick, ent] of Object.entries(remoteEntities)) {
+                const headVec = ent.human.position.clone();
+                headVec.y += 2.15;
+                headVec.project(camera);
+                if (headVec.z < 1) {
                     const tag = document.createElement('div');
                     tag.className = 'player-tag';
-                    tag.style.left = pos.x + 'px';
-                    tag.style.top = pos.y + 'px';
-                    tag.innerText = rNick + (rp.carMode === "driver" ? " [За рулём]" : "");
+                    tag.style.left = (headVec.x * 0.5 + 0.5) * window.innerWidth + 'px';
+                    tag.style.top = (-headVec.y * 0.5 + 0.5) * window.innerHeight + 'px';
+                    tag.innerText = rNick + (ent.data.carMode === "driver" ? " [За рулём]" : "");
                     labels.appendChild(tag);
                 }
             }
+
+            renderer.render(scene, camera);
         }
-        loop();
+        animate();
     </script>
 </body>
 </html>
