@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Radmir Style RP - 3D Browser</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        body { overflow: hidden; background: #0f172a; }
+        
+        /* Меню входа со скруглениями */
+        #menu-overlay {
+            position: fixed; inset: 0; background: rgba(10, 14, 24, 0.85);
+            backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 100;
+        }
+        .menu-box {
+            background: rgba(24, 28, 42, 0.95); border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 24px; padding: 36px; width: 400px; text-align: center; color: white;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+        }
+        .menu-box h1 { font-size: 30px; margin-bottom: 6px; background: linear-gradient(90deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .menu-box p { font-size: 14px; color: #94a3b8; margin-bottom: 24px; }
+        .menu-box input, .menu-box select {
+            width: 100%; padding: 13px 16px; margin-bottom: 14px; border-radius: 14px;
+            border: 1px solid #334155; background: #1e293b; color: white; font-size: 15px; outline: none;
+        }
+        .menu-box button {
+            width: 100%; padding: 14px; border-radius: 14px; border: none;
+            background: linear-gradient(135deg, #9333ea, #6366f1); color: white;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .menu-box button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(147, 51, 234, 0.4); }
+        #menu-error { color: #f87171; font-size: 13px; margin-bottom: 10px; min-height: 18px; }
+
+        /* Игровой HUD */
+        #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
+        #chat-container { position: absolute; top: 20px; left: 20px; width: 440px; pointer-events: auto; }
+        #chat-messages {
+            background: rgba(15, 23, 42, 0.65); border-radius: 16px; padding: 14px;
+            height: 190px; overflow-y: auto; color: white; font-size: 14px; line-height: 1.45;
+            display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.08);
+        }
+        #chat-input {
+            display: none; width: 100%; margin-top: 8px; padding: 11px 15px; border-radius: 12px;
+            border: 1px solid #a855f7; background: rgba(15, 23, 42, 0.95); color: white; font-size: 14px; outline: none;
+        }
+        #server-info {
+            position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.75);
+            padding: 12px 18px; border-radius: 16px; text-align: right; border: 1px solid rgba(255,255,255,0.08);
+        }
+        #server-badge { color: #c084fc; font-weight: bold; font-size: 15px; }
+        #money-badge { color: #4ade80; font-weight: bold; font-size: 18px; margin-top: 4px; }
+        #location-badge { color: #cbd5e1; font-size: 13px; margin-top: 4px; }
+        #controls-hint {
+            position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.7);
+            color: #e2e8f0; padding: 12px 18px; border-radius: 16px; font-size: 13px; line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menu-overlay">
+        <div class="menu-box">
+            <h1>RADMIR WEB RP</h1>
+            <p>Выбери сервер и начни игру в городе</p>
+            <input type="text" id="nick-input" placeholder="Ник (например, Danila_Dragon)" maxlength="20">
+            <select id="server-select">
+                <option value="Server #01 | Арзамас">Server #01 | Арзамас</option>
+                <option value="Server #02 | Южный">Server #02 | Южный</option>
+            </select>
+            <div id="menu-error"></div>
+            <button onclick="startGame()">ПОДКЛЮЧИТЬСЯ</button>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div id="server-info">
+            <div id="server-badge">Server #01 | Арзамас</div>
+            <div id="money-badge">50 000 ₽</div>
+            <div id="location-badge">Район: Центральная площадь</div>
+        </div>
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <input type="text" id="chat-input" placeholder="Сообщение или команды: /me, /do, /n, /gps...">
+        </div>
+        <div id="controls-hint">
+            <b>WASD</b> — Ходьба / Езда | <b>Shift</b> — Бег | <b>Пробел</b> — Прыжок<br>
+            <b>F</b> — Сесть / Выйти из машины | <b>T</b> — Чат | <b>Мышь</b> — Поворот камеры
+        </div>
+    </div>
+    <script src="https://cloudflare.com"></script>
+    <script>
+        let playerNick = "Player";
+        let isGameStarted = false;
+        let isChatOpen = false;
+        let camAngle = 0;
+
+        // 1. Сцена, небо и мягкий туман
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x7dd3fc);
+        scene.fog = new THREE.Fog(0x7dd3fc, 60, 260);
+
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 400);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // Освещение и солнце с тенями
+        scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+        const sun = new THREE.DirectionalLight(0xfffbeb, 1.15);
+        sun.position.set(80, 120, 60);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        const d = 130;
+        sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
+        sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+        scene.add(sun);
+
+        // 2. Земля, дороги и перекресток в стиле Арзамаса
+        const grass = new THREE.Mesh(
+            new THREE.PlaneGeometry(500, 500),
+            new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.9 })
+        );
+        grass.rotation.x = -Math.PI / 2;
+        grass.receiveShadow = true;
+        scene.add(grass);
+
+        function createRoad(w, l, x, z) {
+            const road = new THREE.Mesh(
+                new THREE.BoxGeometry(w, 0.1, l),
+                new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 })
+            );
+            road.position.set(x, 0.05, z);
+            road.receiveShadow = true;
+            scene.add(road);
+        }
+        createRoad(16, 360, 0, 0);
+        createRoad(360, 16, 0, 0);
+
+        for (let z = -170; z <= 170; z += 12) {
+            if (Math.abs(z) < 12) continue;
+            const line = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 5), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+            line.rotation.x = -Math.PI / 2;
+            line.position.set(0, 0.11, z);
+            scene.add(line);
+        }
+        // 3. Знаковые локации Radmir RP
+        const kremlinWall = new THREE.Mesh(
+            new THREE.BoxGeometry(40, 8, 2),
+            new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7 })
+        );
+        kremlinWall.position.set(32, 4, -25);
+        kremlinWall.castShadow = true; kremlinWall.receiveShadow = true;
+        scene.add(kremlinWall);
+
+        const tower = new THREE.Mesh(
+            new THREE.BoxGeometry(7, 18, 7),
+            new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.6 })
+        );
+        tower.position.set(14, 9, -25);
+        tower.castShadow = true;
+        scene.add(tower);
+
+        const roof = new THREE.Mesh(
+            new THREE.ConeGeometry(5.5, 7, 4),
+            new THREE.MeshStandardMaterial({ color: 0x14532d })
+        );
+        roof.position.set(14, 21.5, -25);
+        roof.rotation.y = Math.PI / 4;
+        scene.add(roof);
+
+        // Автосалон со стеклами
+        const salonBase = new THREE.Mesh(
+            new THREE.BoxGeometry(28, 9, 20),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.15, transparent: true, opacity: 0.75 })
+        );
+        salonBase.position.set(-28, 4.5, -24);
+        salonBase.castShadow = true;
+        scene.add(salonBase);
+
+        const salonRoof = new THREE.Mesh(
+            new THREE.BoxGeometry(30, 1.5, 22),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a })
+        );
+        salonRoof.position.set(-28, 9.5, -24);
+        scene.add(salonRoof);
+
+        // Пост ДПС
+        const dpsBooth = new THREE.Mesh(
+            new THREE.BoxGeometry(5, 3.5, 5),
+            new THREE.MeshStandardMaterial({ color: 0xf8fafc })
+        );
+        dpsBooth.position.set(12, 1.75, 45);
+        dpsBooth.castShadow = true;
+        const dpsStripe = new THREE.Mesh(
+            new THREE.BoxGeometry(5.1, 0.7, 5.1),
+            new THREE.MeshStandardMaterial({ color: 0x2563eb })
+        );
+        dpsStripe.position.set(12, 1.8, 45);
+        scene.add(dpsBooth, dpsStripe);
+
+        // Многоэтажки
+        function createPanelHouse(x, z, floors, colorHex) {
+            const h = floors * 3.2;
+            const house = new THREE.Mesh(
+                new THREE.BoxGeometry(16, h, 14),
+                new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.65 })
+            );
+            house.position.set(x, h / 2, z);
+            house.castShadow = true; house.receiveShadow = true;
+            scene.add(house);
+        }
+        createPanelHouse(-26, 26, 5, 0xd1d5db);
+        createPanelHouse(-26, 55, 9, 0xfde68a);
+        createPanelHouse(28, 28, 7, 0xcbd5e1);
+        createPanelHouse(28, 65, 5, 0xfecaca);
+
+        // 4. Персонаж (Зомби-скин)
+        const playerGroup = new THREE.Group();
+        const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.45), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+        pBody.position.y = 1.2; pBody.castShadow = true;
+        const pHead = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.55), new THREE.MeshStandardMaterial({ color: 0x4ade80 }));
+        pHead.position.y = 2.1; pHead.castShadow = true;
+        playerGroup.add(pBody, pHead);
+        playerGroup.position.set(-4, 0, 12);
+        scene.add(playerGroup);
+
+        // 5. Автопарк (2 машины с блеском)
+        const cars = [];
+        function createCar(x, z, colorHex) {
+            const car = new THREE.Group();
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(2.2, 0.8, 4.5),
+                new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.7, roughness: 0.18 })
+            );
+            body.position.y = 0.7; body.castShadow = true;
+            const cabin = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 0.65, 2.3),
+                new THREE.MeshStandardMaterial({ color: 0x090d16, metalness: 0.9, roughness: 0.1 })
+            );
+            cabin.position.set(0, 1.38, -0.2); cabin.castShadow = true;
+            car.add(body, cabin);
+            car.position.set(x, 0, z);
+            scene.add(car);
+            cars.push({ mesh: car, speed: 0 });
+        }
+        createCar(3, 12, 0x111827);
+        createCar(-18, -12, 0x9333ea);
+        let currentCar = null;
+        // 6. Меню и Чат
+        function startGame() {
+            const nick = document.getElementById('nick-input').value.trim();
+            if (nick.length < 3) {
+                document.getElementById('menu-error').innerText = "Введите ник минимум из 3 символов!";
+                return;
+            }
+            playerNick = nick;
+            document.getElementById('server-badge').innerText = document.getElementById('server-select').value;
+            document.getElementById('menu-overlay').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            isGameStarted = true;
+            addChatMessage(`<span style="color:#facc15">[Сервер]: Добро пожаловать на RADMIR WEB RP, ${playerNick}!</span>`);
+            addChatMessage(`<span style="color:#a855f7">[Подсказка]: Рядом припаркован черный седан. Нажмите [F], чтобы сесть.</span>`);
+        }
+
+        function addChatMessage(html) {
+            const box = document.getElementById('chat-messages');
+            box.innerHTML += `<div>${html}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        let isMouseDown = false;
+        window.addEventListener('mousedown', (e) => { if (e.button === 2 || e.button === 0) isMouseDown = true; });
+        window.addEventListener('mouseup', () => { isMouseDown = false; });
+        window.addEventListener('mousemove', (e) => {
+            if (isMouseDown && isGameStarted && !isChatOpen) camAngle -= e.movementX * 0.006;
+        });
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            if (!isGameStarted) return;
+
+            if (e.code === 'KeyT' && !isChatOpen) {
+                e.preventDefault();
+                isChatOpen = true;
+                const inp = document.getElementById('chat-input');
+                inp.style.display = 'block';
+                inp.focus();
+                return;
+            }
+
+            if (isChatOpen) {
+                if (e.code === 'Enter') {
+                    const inp = document.getElementById('chat-input');
+                    const txt = inp.value.trim();
+                    if (txt) {
+                        if (txt === '/gps') addChatMessage(`<span style="color:#38bdf8">[GPS]: 1. Кремль | 2. Автосалон | 3. Пост ДПС</span>`);
+                        else if (txt.startsWith('/me ')) addChatMessage(`<span style="color:#f472b6">* ${playerNick} ${txt.slice(4)}</span>`);
+                        else if (txt.startsWith('/do ')) addChatMessage(`<span style="color:#38bdf8">${txt.slice(4)} (${playerNick})</span>`);
+                        else if (txt.startsWith('/n ')) addChatMessage(`<span style="color:#9ca3af">(( ${playerNick}: ${txt.slice(3)} ))</span>`);
+                        else addChatMessage(`${playerNick}: ${txt}`);
+                    }
+                    inp.value = '';
+                    inp.style.display = 'none';
+                    isChatOpen = false;
+                } else if (e.code === 'Escape') {
+                    document.getElementById('chat-input').style.display = 'none';
+                    isChatOpen = false;
+                }
+                return;
+            }
+
+            if (e.code === 'KeyF') {
+                if (!currentCar) {
+                    for (let c of cars) {
+                        if (playerGroup.position.distanceTo(c.mesh.position) < 4.5) {
+                            currentCar = c;
+                            playerGroup.visible = false;
+                            addChatMessage(`<span style="color:#f472b6">* ${playerNick} открыл дверь и сел за руль</span>`);
+                            break;
+                        }
+                    }
+                } else {
+                    playerGroup.visible = true;
+                    playerGroup.position.copy(currentCar.mesh.position).add(new THREE.Vector3(-2.5, 0, 0));
+                    currentCar = null;
+                    addChatMessage(`<span style="color:#f472b6">* ${playerNick} вышел из машины</span>`);
+                }
+            }
+            keys[e.code] = true;
+        });
+        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+        // 7. Игровой цикл
+        let velY = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isGameStarted && !isChatOpen) {
+                if (!currentCar) {
+                    const speed = keys['ShiftLeft'] ? 0.26 : 0.14;
+                    const forward = new THREE.Vector3(-Math.sin(camAngle), 0, -Math.cos(camAngle));
+                    const right = new THREE.Vector3(Math.cos(camAngle), 0, -Math.sin(camAngle));
+
+                    if (keys['KeyW']) playerGroup.position.addScaledVector(forward, speed);
+                    if (keys['KeyS']) playerGroup.position.addScaledVector(forward, -speed);
+                    if (keys['KeyA']) playerGroup.position.addScaledVector(right, -speed);
+                    if (keys['KeyD']) playerGroup.position.addScaledVector(right, speed);
+
+                    if (keys['Space'] && playerGroup.position.y <= 0.01) velY = 0.22;
+                    playerGroup.position.y += velY;
+                    if (playerGroup.position.y > 0) velY -= 0.012;
+                    else { playerGroup.position.y = 0; velY = 0; }
+                } else {
+                    if (keys['KeyW']) currentCar.speed = Math.min(currentCar.speed + 0.018, 0.75);
+                    else if (keys['KeyS']) currentCar.speed = Math.max(currentCar.speed - 0.018, -0.35);
+                    else currentCar.speed *= 0.96;
+
+                    if (Math.abs(currentCar.speed) > 0.01) {
+                        const dir = currentCar.speed > 0 ? 1 : -1;
+                        if (keys['KeyA']) currentCar.mesh.rotation.y += 0.035 * dir;
+                        if (keys['KeyD']) currentCar.mesh.rotation.y -= 0.035 * dir;
+                    }
+                    currentCar.mesh.position.x -= Math.sin(currentCar.mesh.rotation.y) * currentCar.speed;
+                    currentCar.mesh.position.z -= Math.cos(currentCar.mesh.rotation.y) * currentCar.speed;
+                }
+            }
+
+            const targetPos = currentCar ? currentCar.mesh.position : playerGroup.position;
+            const locBadge = document.getElementById('location-badge');
+            if (targetPos.x > 5 && targetPos.z < -5) locBadge.innerText = "Район: Арзамасский Кремль";
+            else if (targetPos.x < -10 && targetPos.z < -5) locBadge.innerText = "Район: Автосалон Люкс";
+            else if (targetPos.z > 35) locBadge.innerText = "Район: Пост ДПС (Южный выезд)";
+            else locBadge.innerText = "Район: Центральный проспект";
+
+            const camOffset = new THREE.Vector3(Math.sin(camAngle) * 12, 6, Math.cos(camAngle) * 12);
+            camera.position.lerp(targetPos.clone().add(camOffset), 0.12);
+            camera.lookAt(targetPos.x, targetPos.y + 1.5, targetPos.z);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
