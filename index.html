@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Test Server 3D Online</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Test Server 3D — Mobile & Admin</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
         body { overflow: hidden; background: #0b0f19; }
-        canvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
-        canvas:active { cursor: grabbing; }
+        canvas { display: block; width: 100vw; height: 100vh; }
 
         #launcher {
             position: fixed; inset: 0; z-index: 100;
@@ -17,54 +17,97 @@
         #launcher.hidden { opacity: 0; pointer-events: none; }
 
         .auth-panel {
-            position: absolute; top: 28px; left: 28px;
-            background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(10px);
-            border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 18px; padding: 18px 20px; width: 300px;
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+            border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 18px; padding: 16px; width: 280px;
         }
-        .auth-panel label { display: block; font-size: 11px; color: #c084fc; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; }
+        .auth-panel label { display: block; font-size: 11px; color: #c084fc; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; }
         .auth-panel input {
             width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 10px;
-            padding: 10px 12px; color: white; font-size: 14px; outline: none; margin-bottom: 12px;
+            padding: 10px; color: white; font-size: 14px; outline: none; margin-bottom: 10px; touch-action: auto;
         }
         #auth-msg { color: #f87171; font-size: 12px; min-height: 16px; }
 
         .play-panel {
-            position: absolute; bottom: 28px; right: 28px; display: flex; align-items: center; gap: 12px;
-            background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px; padding: 12px 16px;
+            position: absolute; bottom: 20px; right: 20px; display: flex; align-items: center; gap: 10px;
+            background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px; padding: 10px 14px;
         }
         .play-panel select {
             background: #1e293b; color: white; border: 1px solid #334155;
-            padding: 14px 16px; border-radius: 12px; font-size: 15px; font-weight: 600; outline: none;
+            padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 600; outline: none;
         }
         .play-panel button {
             background: linear-gradient(135deg, #9333ea, #4f46e5); color: white; border: none;
-            padding: 14px 34px; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer;
+            padding: 12px 26px; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer;
         }
 
         #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
+        #top-right-hud { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: auto; }
         #badge {
-            position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.78);
-            color: #c084fc; padding: 10px 16px; border-radius: 12px; font-weight: bold; font-size: 14px;
+            background: rgba(15, 23, 42, 0.85); color: #c084fc; padding: 8px 14px;
+            border-radius: 12px; font-weight: bold; font-size: 13px; border: 1px solid rgba(168, 85, 247, 0.3);
         }
-        #chat-box { position: absolute; top: 20px; left: 20px; width: 410px; pointer-events: auto; }
+        #open-admin-btn {
+            display: none; background: linear-gradient(135deg, #dc2626, #991b1d); color: white;
+            border: 1px solid #fca5a5; padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer;
+        }
+
+        #chat-box { position: absolute; top: 15px; left: 15px; width: 340px; max-width: 60vw; pointer-events: auto; }
         #chat-log {
-            background: rgba(15, 23, 42, 0.68); border-radius: 14px; padding: 12px;
-            height: 170px; overflow-y: auto; color: white; font-size: 13px; line-height: 1.45;
+            background: rgba(15, 23, 42, 0.65); border-radius: 12px; padding: 10px;
+            height: 130px; overflow-y: auto; color: white; font-size: 12px; line-height: 1.4;
             display: flex; flex-direction: column; justify-content: flex-end;
         }
         #chat-input {
-            display: none; width: 100%; margin-top: 6px; padding: 10px 14px; border-radius: 10px;
-            border: 1px solid #a855f7; background: #0f172a; color: white; font-size: 14px; outline: none;
+            display: none; width: 100%; margin-top: 6px; padding: 9px 12px; border-radius: 10px;
+            border: 1px solid #a855f7; background: #0f172a; color: white; font-size: 14px; outline: none; touch-action: auto;
         }
-        #hint {
-            position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.78);
-            color: #e2e8f0; padding: 12px 16px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+
+        #joystick-zone {
+            position: absolute; bottom: 25px; left: 25px; width: 130px; height: 130px;
+            background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 50%; pointer-events: auto; display: flex; justify-content: center; align-items: center;
         }
+        #joystick-stick {
+            width: 54px; height: 54px; background: radial-gradient(circle, #c084fc, #7e22ce);
+            border: 2px solid white; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transform: translate(0px, 0px);
+        }
+
+        #mobile-actions {
+            position: absolute; bottom: 25px; right: 25px; display: flex; gap: 10px; pointer-events: auto;
+        }
+        .act-btn {
+            width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(15, 23, 42, 0.8); color: white; font-weight: bold; font-size: 12px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+        }
+        .act-btn:active { background: #7e22ce; transform: scale(0.95); }
+
+        #admin-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 340px; max-width: 92vw; background: #111827; border: 2px solid #ef4444;
+            border-radius: 20px; padding: 20px; z-index: 200; color: white; pointer-events: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.85);
+        }
+        #admin-modal h3 { color: #f87171; font-size: 17px; margin-bottom: 12px; text-align: center; }
+        #admin-modal input {
+            width: 100%; background: #1e293b; border: 1px solid #475569; border-radius: 8px;
+            padding: 8px 10px; color: white; font-size: 13px; margin-bottom: 10px; outline: none; touch-action: auto;
+        }
+        .adm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .adm-btn {
+            background: #1e293b; border: 1px solid #334155; color: white; padding: 10px 6px;
+            border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .adm-btn:hover { background: #dc2626; border-color: #fca5a5; }
+        .adm-close { width: 100%; background: #334155; border: none; color: white; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
         #labels-layer { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
         .player-tag {
             position: absolute; transform: translate(-50%, -100%);
-            background: rgba(0,0,0,0.65); color: white; padding: 3px 8px; border-radius: 6px;
+            background: rgba(0,0,0,0.68); color: white; padding: 3px 8px; border-radius: 6px;
             font-size: 12px; font-weight: bold; white-space: nowrap;
         }
     </style>
@@ -74,37 +117,61 @@
     <div id="launcher">
         <div class="auth-panel">
             <label>Игровой ник</label>
-            <input type="text" id="nick-input" placeholder="Например: Domik_Brane" maxlength="20">
+            <input type="text" id="nick-input" placeholder="Например: admin" maxlength="20">
             <label>Пароль от аккаунта</label>
             <input type="password" id="pass-input" placeholder="Введите пароль" maxlength="32">
             <div id="auth-msg"></div>
         </div>
         <div class="play-panel">
-            <select id="server-select"><option value="Test Server #1">Test Server #1 (Three.js)</option></select>
-            <button onclick="loginAndPlay()">ВОЙТИ В ИГРУ</button>
+            <select id="server-select"><option value="Test Server #1">Test Server #1 (Mobile + PC)</option></select>
+            <button onclick="loginAndPlay()">ИГРАТЬ</button>
         </div>
     </div>
 
     <div id="labels-layer"></div>
 
     <div id="hud">
-        <div id="badge">Test Server #1</div>
+        <div id="top-right-hud">
+            <div id="badge">Test Server #1</div>
+            <button id="open-admin-btn" onclick="toggleAdminPanel()">АДМИН-ПАНЕЛЬ</button>
+        </div>
+
         <div id="chat-box">
             <div id="chat-log"></div>
-            <input type="text" id="chat-input" placeholder="Написать в чат или /me...">
+            <input type="text" id="chat-input" placeholder="Сообщение в чат...">
         </div>
-        <div id="hint">
-            <b>WASD</b> — Движение | <b>Shift</b> — Бег | <b>Пробел</b> — Прыжок | <b>T</b> — Чат<br>
-            <b>F</b> — Сесть за руль | <b>G</b> — Пассажиром к игроку | <b>H</b> — Пожать руку
+
+        <div id="joystick-zone">
+            <div id="joystick-stick"></div>
         </div>
+
+        <div id="mobile-actions">
+            <div class="act-btn" onclick="openMobileChat()">ЧАТ</div>
+            <div class="act-btn" onclick="tryPassenger()">ПАСС</div>
+            <div class="act-btn" onclick="toggleCar()">АВТО</div>
+            <div class="act-btn" onclick="doJump()">ПРЫЖ</div>
+        </div>
+    </div>
+
+    <div id="admin-modal">
+        <h3 id="adm-title">АДМИН-ПАНЕЛЬ (LVL 10)</h3>
+        <input type="text" id="adm-target-nick" placeholder="Ник игрока (для ТП / Кика / Админки)">
+        <input type="number" id="adm-set-lvl" placeholder="Уровень админки (1 - 10)" min="0" max="10">
+        <div class="adm-grid">
+            <button class="adm-btn" onclick="admAction('fly')">Режим полёта (Fly)</button>
+            <button class="adm-btn" onclick="admAction('veh')">Заспавнить авто</button>
+            <button class="adm-btn" onclick="admAction('tp')">ТП к игроку</button>
+            <button class="adm-btn" onclick="admAction('gethere')">ТП игрока к себе</button>
+            <button class="adm-btn" onclick="admAction('makeadmin')">Выдать админку</button>
+            <button class="adm-btn" onclick="admAction('kick')">Кикнуть игрока</button>
+        </div>
+        <button class="adm-close" onclick="toggleAdminPanel()">ЗАКРЫТЬ ПАНЕЛЬ</button>
     </div>
 
     <script src="./three.min.js"></script>
     <script src="./GLTFLoader.js"></script>
-    <script>
         const DB_URL = "https://" + "test-83342-default-rtdb" + ".firebaseio.com";
 
-        // Сцена, камера, рендерер с мягкими тенями
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.Fog(0x87ceeb, 40, 180);
@@ -121,21 +188,13 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Солнечный свет и окружение
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.7);
-        scene.add(hemiLight);
-
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 0.75));
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
         dirLight.position.set(30, 50, 25);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
-        // Тестовый пол с координатной сеткой
-        const floorGeo = new THREE.PlaneGeometry(250, 250);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), new THREE.MeshStandardMaterial({ color: 0x334155 }));
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         scene.add(floor);
@@ -144,7 +203,6 @@
         gridHelper.position.y = 0.01;
         scene.add(gridHelper);
 
-        // Загрузчик твоей 3D-машины car.glb (с авто-масштабированием под размер игрока)
         const gltfLoader = new THREE.GLTFLoader();
         let carTemplate = null;
 
@@ -158,38 +216,58 @@
             return grp;
         }
 
+        function attachDoors(carGroup, colorHex) {
+            const doorMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.35, metalness: 0.5 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.8 });
+            function makeDoor(side) {
+                const pivot = new THREE.Group();
+                pivot.position.set(side * 0.98, 0.55, 0.65);
+                const panel = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.52, 1.15), doorMat);
+                panel.position.set(0, 0, -0.55);
+                const win = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.36, 0.95), glassMat);
+                win.position.set(0, 0.42, -0.52);
+                pivot.add(panel, win);
+                carGroup.add(pivot);
+                return pivot;
+            }
+            carGroup.userData.doorL = makeDoor(-1);
+            carGroup.userData.doorR = makeDoor(1);
+            carGroup.userData.doorLTarget = 0;
+            carGroup.userData.doorRTarget = 0;
+        }
+
         const myCarMesh = new THREE.Group();
         myCarMesh.position.set(3, 0, 0);
         scene.add(myCarMesh);
+        attachDoors(myCarMesh, 0x7c3aed);
 
         gltfLoader.load('./car.glb', (gltf) => {
             const model = gltf.scene;
             const box = new THREE.Box3().setFromObject(model);
             const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 4.4 / (maxDim || 1); // Подгоняем длину любой скачанной машины под 4.4 метра
+            const scale = 4.4 / (Math.max(size.x, size.y, size.z) || 1);
             model.scale.set(scale, scale, scale);
-
-            const scaledBox = new THREE.Box3().setFromObject(model);
-            model.position.y = -scaledBox.min.y; // Ставим колёсами ровно на асфальт
+            const sBox = new THREE.Box3().setFromObject(model);
+            model.position.y = -sBox.min.y;
             model.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
-
             carTemplate = model;
             myCarMesh.add(carTemplate.clone());
         }, undefined, () => {
             myCarMesh.add(createFallbackCar(0x7c3aed));
         });
-        function createHumanModel(hoodieColorHex) {
+
+        function createHumanModel(adminLvl) {
             const root = new THREE.Group();
-            const matHoodie = new THREE.MeshStandardMaterial({ color: hoodieColorHex, roughness: 0.7 });
+            const isAdm = adminLvl > 0;
+            const matHoodie = new THREE.MeshStandardMaterial({ color: isAdm ? 0x111115 : 0x1e2538, roughness: 0.5 });
+            const matTrim = new THREE.MeshStandardMaterial({ color: isAdm ? 0xef4444 : 0xf1f5f9, emissive: isAdm ? 0x7f1d1d : 0x000000 });
             const matSkin = new THREE.MeshStandardMaterial({ color: 0xc48f70, roughness: 0.6 });
-            const matJeans = new THREE.MeshStandardMaterial({ color: 0x171923, roughness: 0.8 });
-            const matWhite = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4 });
-            const matGlove = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.5 });
+            const matJeans = new THREE.MeshStandardMaterial({ color: isAdm ? 0x09090b : 0x171923, roughness: 0.8 });
+            const matGlove = new THREE.MeshStandardMaterial({ color: isAdm ? 0xdc2626 : 0x111113, roughness: 0.4 });
 
             const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.20, 0.58, 12), matHoodie);
             torso.position.y = 1.24; torso.castShadow = true;
-            const tee = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.21, 0.12, 12), matWhite);
+            const tee = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.21, 0.12, 12), matTrim);
             tee.position.y = 0.92; tee.castShadow = true;
 
             const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 14), matSkin);
@@ -197,21 +275,24 @@
             const hood = new THREE.Mesh(new THREE.SphereGeometry(0.155, 14, 14), matHoodie);
             hood.position.set(0, 1.70, -0.02); hood.castShadow = true;
 
+            if (isAdm) {
+                const crown = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.02, 8, 20), matTrim);
+                crown.rotation.x = Math.PI / 2;
+                crown.position.set(0, 1.92, 0);
+                root.add(crown);
+            }
+
             function makeArm(side) {
                 const shoulder = new THREE.Group();
                 shoulder.position.set(side * 0.26, 1.48, 0);
                 const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.28, 10), matHoodie);
                 upper.position.y = -0.14; upper.castShadow = true;
-
-                const elbow = new THREE.Group();
-                elbow.position.y = -0.28;
+                const elbow = new THREE.Group(); elbow.position.y = -0.28;
                 const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.045, 0.26, 10), matHoodie);
                 fore.position.y = -0.13; fore.castShadow = true;
                 const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 10), matGlove);
                 hand.position.y = -0.27;
-
-                elbow.add(fore, hand);
-                shoulder.add(upper, elbow);
+                elbow.add(fore, hand); shoulder.add(upper, elbow);
                 return { shoulder, elbow };
             }
 
@@ -220,16 +301,12 @@
                 hip.position.set(side * 0.11, 0.88, 0);
                 const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.085, 0.42, 10), matJeans);
                 thigh.position.y = -0.21; thigh.castShadow = true;
-
-                const knee = new THREE.Group();
-                knee.position.y = -0.42;
+                const knee = new THREE.Group(); knee.position.y = -0.42;
                 const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.08, 0.40, 10), matJeans);
                 shin.position.y = -0.20; shin.castShadow = true;
-                const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, 0.26), matWhite);
+                const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, 0.26), matTrim);
                 shoe.position.set(0, -0.41, 0.05); shoe.castShadow = true;
-
-                knee.add(shin, shoe);
-                hip.add(thigh, knee);
+                knee.add(shin, shoe); hip.add(thigh, knee);
                 return { hip, knee };
             }
 
@@ -239,7 +316,6 @@
             root.userData = { armL, armR, legL, legR };
             return root;
         }
-
         function animateHuman(mesh, walk, isAir) {
             const { armL, armR, legL, legR } = mesh.userData;
             if (isAir) {
@@ -249,13 +325,10 @@
                 armR.shoulder.rotation.x = 0.20;  armR.elbow.rotation.x = -0.75;
             } else if (walk > 0.01) {
                 const s = Math.sin(walk);
-                legL.hip.rotation.x = s * 0.48;
-                legR.hip.rotation.x = -s * 0.48;
+                legL.hip.rotation.x = s * 0.48; legR.hip.rotation.x = -s * 0.48;
                 legL.knee.rotation.x = Math.max(0, -Math.sin(walk - 0.5)) * 0.85 + 0.1;
                 legR.knee.rotation.x = Math.max(0, Math.sin(walk - 0.5)) * 0.85 + 0.1;
-
-                armL.shoulder.rotation.x = -s * 0.42;
-                armR.shoulder.rotation.x = s * 0.42;
+                armL.shoulder.rotation.x = -s * 0.42; armR.shoulder.rotation.x = s * 0.42;
                 armL.elbow.rotation.x = -(0.35 + Math.max(0, s) * 0.55);
                 armR.elbow.rotation.x = -(0.35 + Math.max(0, -s) * 0.55);
             } else {
@@ -267,14 +340,26 @@
             }
         }
 
-        const myPlayerMesh = createHumanModel(0x1e2538);
+        function triggerDoorAnim(carGroup, side) {
+            if (!carGroup.userData.doorL) return;
+            if (side === "L") {
+                carGroup.userData.doorLTarget = -1.05;
+                setTimeout(() => { carGroup.userData.doorLTarget = 0; }, 1100);
+            } else {
+                carGroup.userData.doorRTarget = 1.05;
+                setTimeout(() => { carGroup.userData.doorRTarget = 0; }, 1100);
+            }
+        }
+
+        let myPlayerMesh = createHumanModel(0);
         myPlayerMesh.position.set(-2.5, 0, 0);
         scene.add(myPlayerMesh);
 
-        let myNick = "", started = false, chatOpen = false;
+        let myNick = "", adminLevel = 0, adminFly = false, started = false, chatOpen = false;
         let camYaw = 0, camPitch = 0.28, camDist = 4.5, dragging = false;
         let carMode = "none", hostNick = "", vy = 0, walkTime = 0, carSpeed = 0;
         let remoteEntities = {};
+        const spawnedCars = [];
         let lastChatId = "";
 
         async function loginAndPlay() {
@@ -286,7 +371,7 @@
                 return;
             }
             msg.style.color = "#c084fc";
-            msg.innerText = "Проверка пароля в базе данных...";
+            msg.innerText = "Проверка аккаунта в базе данных...";
 
             try {
                 const res = await fetch(DB_URL + "/users/" + encodeURIComponent(nick) + ".json");
@@ -296,25 +381,83 @@
                     msg.innerText = "Неверный пароль от этого аккаунта!";
                     return;
                 }
+                const defaultAdm = (nick.toLowerCase() === "admin" || nick === "Domik_Brane") ? 10 : 0;
                 if (!userData) {
                     await fetch(DB_URL + "/users/" + encodeURIComponent(nick) + ".json", {
-                        method: 'PUT', body: JSON.stringify({ password: pass, created: Date.now() })
+                        method: 'PUT', body: JSON.stringify({ password: pass, adminLevel: defaultAdm, created: Date.now() })
                     });
+                    adminLevel = defaultAdm;
+                } else {
+                    adminLevel = Math.max(userData.adminLevel || 0, defaultAdm);
                 }
             } catch (e) {
                 msg.style.color = "#f87171";
-                msg.innerText = "Ошибка сети или правил доступа БД!";
+                msg.innerText = "Ошибка сети или правил БД!";
                 return;
             }
 
             myNick = nick;
-            document.getElementById('badge').innerText = "Test Server #1 • " + myNick;
+            if (adminLevel > 0) {
+                const pos = myPlayerMesh.position.clone();
+                scene.remove(myPlayerMesh);
+                myPlayerMesh = createHumanModel(adminLevel);
+                myPlayerMesh.position.copy(pos);
+                scene.add(myPlayerMesh);
+                document.getElementById('open-admin-btn').style.display = 'block';
+                document.getElementById('adm-title').innerText = `АДМИН-ПАНЕЛЬ (LVL ${adminLevel})`;
+            }
+
+            document.getElementById('badge').innerHTML = (adminLevel > 0 ? `<span style="color:#f87171">[ADM ${adminLevel}]</span> ` : "") + myNick;
             document.getElementById('launcher').classList.add('hidden');
             document.getElementById('hud').style.display = 'block';
             started = true;
-            addChat(`<span style="color:#facc15">[Сервер]: Вы вошли как ${myNick}!</span>`);
-            sendChatOnline(`<span style="color:#4ade80">[Сервер]: ${myNick} подключился к серверу.</span>`);
+            addChat(`<span style="color:#facc15">[Сервер]: Добро пожаловать, ${myNick}!</span>`);
+            sendChatOnline(`<span style="color:#4ade80">[Сервер]: ${myNick} зашёл на сервер.</span>`);
         }
+        function toggleAdminPanel() {
+            const modal = document.getElementById('admin-modal');
+            modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+        }
+
+        async function admAction(type) {
+            if (adminLevel < 1) return;
+            const target = document.getElementById('adm-target-nick').value.trim();
+
+            if (type === 'fly') {
+                adminFly = !adminFly;
+                vy = 0;
+                addChat(`<span style="color:#f87171">[Admin]: Режим полёта ${adminFly ? 'ВКЛЮЧЁН (Пробел — вверх, C — вниз)' : 'ВЫКЛЮЧЕН'}</span>`);
+            } else if (type === 'veh' && adminLevel >= 2) {
+                const c = carTemplate ? carTemplate.clone() : createFallbackCar(0xef4444);
+                c.position.set(myPlayerMesh.position.x + 3, 0, myPlayerMesh.position.z);
+                scene.add(c);
+                spawnedCars.push(c);
+                sendChatOnline(`<span style="color:#f87171">[A] Администратор ${myNick} заспавнил транспорт.</span>`);
+            } else if (type === 'tp' && target && remoteEntities[target]) {
+                const pos = remoteEntities[target].human.position;
+                myPlayerMesh.position.set(pos.x + 1.5, pos.y, pos.z);
+                addChat(`<span style="color:#f87171">[Admin]: Вы телепортировались к ${target}.</span>`);
+            } else if (type === 'gethere' && target && adminLevel >= 3) {
+                await fetch(DB_URL + "/commands/" + encodeURIComponent(target) + ".json", {
+                    method: 'PUT', body: JSON.stringify({ cmd: 'tp', x: myPlayerMesh.position.x + 1.5, y: myPlayerMesh.position.y, z: myPlayerMesh.position.z, by: myNick })
+                });
+                addChat(`<span style="color:#f87171">[Admin]: Вы телепортировали ${target} к себе.</span>`);
+            } else if (type === 'kick' && target && adminLevel >= 4) {
+                await fetch(DB_URL + "/commands/" + encodeURIComponent(target) + ".json", {
+                    method: 'PUT', body: JSON.stringify({ cmd: 'kick', by: myNick })
+                });
+                sendChatOnline(`<span style="color:#ef4444">[A] Администратор ${myNick} кикнул игрока ${target}.</span>`);
+            } else if (type === 'makeadmin' && target && adminLevel >= 9) {
+                const newLvl = Math.max(0, Math.min(10, parseInt(document.getElementById('adm-set-lvl').value) || 0));
+                await fetch(DB_URL + "/users/" + encodeURIComponent(target) + "/adminLevel.json", {
+                    method: 'PUT', body: JSON.stringify(newLvl)
+                });
+                sendChatOnline(`<span style="color:#f87171">[A] Главный Админ ${myNick} выдал ${target} админку ${newLvl} уровня.</span>`);
+            } else {
+                addChat(`<span style="color:#f87171">[Ошибка]: Укажите ник игрока или недостаточно прав (нужен выше уровень).</span>`);
+            }
+        }
+
         function addChat(html) {
             const log = document.getElementById('chat-log');
             log.innerHTML += `<div>${html}</div>`;
@@ -336,17 +479,30 @@
                     method: 'PUT',
                     body: JSON.stringify({
                         x: myPlayerMesh.position.x, y: myPlayerMesh.position.y, z: myPlayerMesh.position.z,
-                        angle: myPlayerMesh.rotation.y, walk: walkTime, carMode: carMode,
+                        angle: myPlayerMesh.rotation.y, walk: walkTime, carMode: carMode, adminLevel: adminLevel,
                         carX: myCarMesh.position.x, carZ: myCarMesh.position.z, carAng: myCarMesh.rotation.y, ts: Date.now()
                     })
                 });
-                const [pRes, cRes] = await Promise.all([
+                const [pRes, cRes, cmdRes] = await Promise.all([
                     fetch(DB_URL + "/online.json"),
-                    fetch(DB_URL + "/chat.json?orderBy=\"$key\"&limitToLast=1")
+                    fetch(DB_URL + "/chat.json?orderBy=\"$key\"&limitToLast=1"),
+                    fetch(DB_URL + "/commands/" + encodeURIComponent(myNick) + ".json")
                 ]);
+
+                const cmdData = await cmdRes.json();
+                if (cmdData) {
+                    await fetch(DB_URL + "/commands/" + encodeURIComponent(myNick) + ".json", { method: 'DELETE' });
+                    if (cmdData.cmd === 'kick') {
+                        alert("Вы были кикнуты администратором " + cmdData.by);
+                        location.reload();
+                    } else if (cmdData.cmd === 'tp') {
+                        myPlayerMesh.position.set(cmdData.x, cmdData.y, cmdData.z);
+                        addChat(`<span style="color:#f87171">[Admin]: Администратор ${cmdData.by} телепортировал вас к себе.</span>`);
+                    }
+                }
+
                 const pData = await pRes.json() || {};
                 const now = Date.now();
-
                 for (let k of Object.keys(remoteEntities)) {
                     if (!pData[k] || now - pData[k].ts > 8000) {
                         scene.remove(remoteEntities[k].human);
@@ -354,12 +510,12 @@
                         delete remoteEntities[k];
                     }
                 }
-
                 for (let [k, v] of Object.entries(pData)) {
                     if (k === myNick || !v || now - v.ts > 8000) continue;
                     if (!remoteEntities[k]) {
-                        const h = createHumanModel(0x4c1d95);
+                        const h = createHumanModel(v.adminLevel || 0);
                         const c = carTemplate ? carTemplate.clone() : createFallbackCar(0x10b981);
+                        attachDoors(c, 0x10b981);
                         scene.add(h, c);
                         remoteEntities[k] = { human: h, car: c, data: v };
                     }
@@ -369,7 +525,6 @@
                     ent.human.rotation.y = v.angle;
                     ent.human.visible = (v.carMode === "none");
                     animateHuman(ent.human, v.walk || 0, v.y > 0.05);
-
                     ent.car.position.set(v.carX, 0, v.carZ);
                     ent.car.rotation.y = v.carAng;
                 }
@@ -384,6 +539,120 @@
                 }
             } catch (e) {}
         }, 250);
+        let joyX = 0, joyY = 0, joyTouchId = null;
+        const joyZone = document.getElementById('joystick-zone');
+        const joyStick = document.getElementById('joystick-stick');
+
+        joyZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const t = e.changedTouches.at(0);
+            joyTouchId = t.identifier;
+            updateJoystick(t);
+        }, { passive: false });
+
+        joyZone.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (let t of e.changedTouches) {
+                if (t.identifier === joyTouchId) updateJoystick(t);
+            }
+        }, { passive: false });
+
+        function resetJoystick(e) {
+            for (let t of e.changedTouches) {
+                if (t.identifier === joyTouchId) {
+                    joyTouchId = null;
+                    joyX = 0; joyY = 0;
+                    joyStick.style.transform = `translate(0px, 0px)`;
+                }
+            }
+        }
+        joyZone.addEventListener('touchend', resetJoystick);
+        joyZone.addEventListener('touchcancel', resetJoystick);
+
+        function updateJoystick(touch) {
+            const rect = joyZone.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            let dx = touch.clientX - cx;
+            let dy = touch.clientY - cy;
+            const maxR = 45;
+            const dist = Math.hypot(dx, dy);
+            if (dist > maxR) {
+                dx = (dx / dist) * maxR;
+                dy = (dy / dist) * maxR;
+            }
+            joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+            joyX = dx / maxR;
+            joyY = dy / maxR;
+        }
+
+        let camTouchId = null, lastTouchX = 0, lastTouchY = 0;
+        renderer.domElement.addEventListener('touchstart', (e) => {
+            if (!started || chatOpen) return;
+            const t = e.changedTouches.at(0);
+            camTouchId = t.identifier;
+            lastTouchX = t.clientX;
+            lastTouchY = t.clientY;
+        }, { passive: true });
+
+        renderer.domElement.addEventListener('touchmove', (e) => {
+            if (!started || chatOpen) return;
+            for (let t of e.changedTouches) {
+                if (t.identifier === camTouchId) {
+                    camYaw -= (t.clientX - lastTouchX) * 0.007;
+                    camPitch = Math.max(-0.05, Math.min(1.15, camPitch + (t.clientY - lastTouchY) * 0.006));
+                    lastTouchX = t.clientX;
+                    lastTouchY = t.clientY;
+                }
+            }
+        }, { passive: true });
+        function openMobileChat() {
+            if (!started) return;
+            chatOpen = true;
+            if (document.exitPointerLock) document.exitPointerLock();
+            const inp = document.getElementById('chat-input');
+            inp.style.display = 'block';
+            inp.focus();
+        }
+
+        function toggleCar() {
+            if (!started) return;
+            if (carMode === "none" && myPlayerMesh.position.distanceTo(myCarMesh.position) < 4.2) {
+                carMode = "driver";
+                myPlayerMesh.visible = false;
+                triggerDoorAnim(myCarMesh, "L");
+                sendChatOnline(`<span style="color:#f472b6">* ${myNick} открыл дверь и сел за руль</span>`);
+            } else if (carMode !== "none") {
+                if (carMode === "driver") triggerDoorAnim(myCarMesh, "L");
+                carMode = "none";
+                myPlayerMesh.visible = true;
+                myPlayerMesh.position.x -= 2.2;
+                sendChatOnline(`<span style="color:#f472b6">* ${myNick} открыл дверь и вышел из машины</span>`);
+            }
+        }
+
+        function tryPassenger() {
+            if (!started || carMode !== "none") return;
+            for (let [rNick, ent] of Object.entries(remoteEntities)) {
+                if (myPlayerMesh.position.distanceTo(ent.car.position) < 4.5) {
+                    carMode = "passenger";
+                    hostNick = rNick;
+                    myPlayerMesh.visible = false;
+                    triggerDoorAnim(ent.car, "R");
+                    sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел пассажиром к ${rNick}</span>`);
+                    break;
+                }
+            }
+        }
+
+        function doJump() {
+            if (!started || carMode !== "none") return;
+            if (adminFly) {
+                myPlayerMesh.position.y += 1.5;
+            } else if (myPlayerMesh.position.y <= 0.01) {
+                vy = 0.18;
+            }
+        }
 
         renderer.domElement.addEventListener('mousedown', () => {
             dragging = true;
@@ -405,96 +674,88 @@
         window.addEventListener('keydown', (e) => {
             if (!started) return;
             if (e.code === 'KeyT' && !chatOpen) {
-                e.preventDefault(); chatOpen = true;
-                if (document.exitPointerLock) document.exitPointerLock();
-                const inp = document.getElementById('chat-input'); inp.style.display = 'block'; inp.focus();
+                e.preventDefault();
+                openMobileChat();
                 return;
             }
             if (chatOpen) {
                 if (e.code === 'Enter') {
-                    const inp = document.getElementById('chat-input'); const txt = inp.value.trim();
+                    const inp = document.getElementById('chat-input');
+                    const txt = inp.value.trim();
                     if (txt) {
-                        const formatted = txt.startsWith('/me ') ? `<span style="color:#f472b6">* ${myNick} ${txt.slice(4)}</span>` : `${myNick}: ${txt}`;
+                        const prefix = adminLevel > 0 ? `<span style="color:#f87171">[ADM ${adminLevel}]</span> ` : "";
+                        const formatted = txt.startsWith('/me ') ? `<span style="color:#f472b6">* ${myNick} ${txt.slice(4)}</span>` : `${prefix}${myNick}: ${txt}`;
                         sendChatOnline(formatted);
                     }
-                    inp.value = ''; inp.style.display = 'none'; chatOpen = false;
-                } else if (e.code === 'Escape') { document.getElementById('chat-input').style.display = 'none'; chatOpen = false; }
+                    inp.value = '';
+                    inp.style.display = 'none';
+                    chatOpen = false;
+                } else if (e.code === 'Escape') {
+                    document.getElementById('chat-input').style.display = 'none';
+                    chatOpen = false;
+                }
                 return;
             }
 
-            if (e.code === 'KeyF') {
-                if (carMode === "none" && myPlayerMesh.position.distanceTo(myCarMesh.position) < 4.2) {
-                    carMode = "driver";
-                    myPlayerMesh.visible = false;
-                    sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел за руль автомобиля</span>`);
-                } else if (carMode !== "none") {
-                    carMode = "none";
-                    myPlayerMesh.visible = true;
-                    myPlayerMesh.position.x -= 2.2;
-                    sendChatOnline(`<span style="color:#f472b6">* ${myNick} вышел из автомобиля</span>`);
-                }
-            }
-
-            if (e.code === 'KeyG' && carMode === "none") {
-                for (let [rNick, ent] of Object.entries(remoteEntities)) {
-                    if (myPlayerMesh.position.distanceTo(ent.car.position) < 4.5) {
-                        carMode = "passenger";
-                        hostNick = rNick;
-                        myPlayerMesh.visible = false;
-                        sendChatOnline(`<span style="color:#f472b6">* ${myNick} сел пассажиром к ${rNick}</span>`);
-                        break;
-                    }
-                }
-            }
-
-            if (e.code === 'KeyH' && carMode === "none") {
-                for (let [rNick, ent] of Object.entries(remoteEntities)) {
-                    if (myPlayerMesh.position.distanceTo(ent.human.position) < 3.5) {
-                        sendChatOnline(`<span style="color:#f472b6">* ${myNick} пожал руку игроку ${rNick}</span>`);
-                        break;
-                    }
-                }
-            }
+            if (e.code === 'KeyF') toggleCar();
+            if (e.code === 'KeyG') tryPassenger();
+            if (e.code === 'Space') doJump();
             keys[e.code] = true;
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
         function animate() {
             requestAnimationFrame(animate);
 
+            // Плавная анимация открытия и закрытия дверей у всех машин
+            const updateDoors = (carGrp) => {
+                if (!carGrp.userData.doorL) return;
+                carGrp.userData.doorL.rotation.y += (carGrp.userData.doorLTarget - carGrp.userData.doorL.rotation.y) * 0.15;
+                carGrp.userData.doorR.rotation.y += (carGrp.userData.doorRTarget - carGrp.userData.doorR.rotation.y) * 0.15;
+            };
+            updateDoors(myCarMesh);
+            for (let ent of Object.values(remoteEntities)) updateDoors(ent.car);
+
             if (started && !chatOpen) {
+                // Объединяем ввод с клавиатуры (WASD) и мобильного стика (joyX, joyY)
+                let moveForward = (keys['KeyW'] ? 1 : 0) - (keys['KeyS'] ? 1 : 0) - joyY;
+                let moveRight = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0) + joyX;
+
                 if (carMode === "none") {
                     const fwdX = -Math.sin(camYaw), fwdZ = -Math.cos(camYaw);
                     const rightX = Math.cos(camYaw), rightZ = -Math.sin(camYaw);
-                    let dx = 0, dz = 0;
-                    if (keys['KeyW']) { dx += fwdX; dz += fwdZ; }
-                    if (keys['KeyS']) { dx -= fwdX; dz -= fwdZ; }
-                    if (keys['KeyD']) { dx += rightX; dz += rightZ; }
-                    if (keys['KeyA']) { dx -= rightX; dz -= rightZ; }
+                    let dx = fwdX * moveForward + rightX * moveRight;
+                    let dz = fwdZ * moveForward + rightZ * moveRight;
 
                     const len = Math.hypot(dx, dz);
-                    if (len > 0) {
-                        const spd = keys['ShiftLeft'] ? 0.18 : 0.095;
+                    if (len > 0.05) {
+                        const norm = Math.min(1, len);
+                        const spd = (keys['ShiftLeft'] || adminFly) ? 0.22 : 0.095 * norm;
                         myPlayerMesh.position.x += (dx / len) * spd;
                         myPlayerMesh.position.z += (dz / len) * spd;
                         myPlayerMesh.rotation.y = Math.atan2(dx, dz);
                         walkTime += spd * 0.65;
-                    } else walkTime = 0;
+                    } else {
+                        walkTime = 0;
+                    }
 
-                    if (keys['Space'] && myPlayerMesh.position.y <= 0.01) vy = 0.18;
-                    myPlayerMesh.position.y += vy;
-                    if (myPlayerMesh.position.y > 0) vy -= 0.010;
-                    else { myPlayerMesh.position.y = 0; vy = 0; }
+                    if (adminFly) {
+                        if (keys['Space']) myPlayerMesh.position.y += 0.15;
+                        if (keys['KeyC'] || keys['ControlLeft']) myPlayerMesh.position.y = Math.max(0, myPlayerMesh.position.y - 0.15);
+                    } else {
+                        myPlayerMesh.position.y += vy;
+                        if (myPlayerMesh.position.y > 0) vy -= 0.010;
+                        else { myPlayerMesh.position.y = 0; vy = 0; }
+                    }
 
-                    animateHuman(myPlayerMesh, walkTime, myPlayerMesh.position.y > 0.05);
+                    animateHuman(myPlayerMesh, walkTime, myPlayerMesh.position.y > 0.05 && !adminFly);
                 } else if (carMode === "driver") {
-                    if (keys['KeyW']) carSpeed = Math.min(carSpeed + 0.018, 0.75);
-                    else if (keys['KeyS']) carSpeed = Math.max(carSpeed - 0.018, -0.35);
+                    if (moveForward > 0.1) carSpeed = Math.min(carSpeed + 0.018 * moveForward, 0.75);
+                    else if (moveForward < -0.1) carSpeed = Math.max(carSpeed + 0.018 * moveForward, -0.35);
                     else carSpeed *= 0.96;
 
                     if (Math.abs(carSpeed) > 0.01) {
                         const dir = carSpeed > 0 ? 1 : -1;
-                        if (keys['KeyA']) myCarMesh.rotation.y += 0.04 * dir;
-                        if (keys['KeyD']) myCarMesh.rotation.y -= 0.04 * dir;
+                        if (Math.abs(moveRight) > 0.1) myCarMesh.rotation.y -= 0.04 * dir * moveRight;
                     }
                     myCarMesh.position.x += Math.sin(myCarMesh.rotation.y) * carSpeed;
                     myCarMesh.position.z += Math.cos(myCarMesh.rotation.y) * carSpeed;
@@ -503,7 +764,10 @@
                     const host = remoteEntities[hostNick];
                     if (host) {
                         myPlayerMesh.position.copy(host.car.position);
-                    } else { carMode = "none"; myPlayerMesh.visible = true; }
+                    } else {
+                        carMode = "none";
+                        myPlayerMesh.visible = true;
+                    }
                 }
             }
 
@@ -528,7 +792,9 @@
                     tag.className = 'player-tag';
                     tag.style.left = (headVec.x * 0.5 + 0.5) * window.innerWidth + 'px';
                     tag.style.top = (-headVec.y * 0.5 + 0.5) * window.innerHeight + 'px';
-                    tag.innerText = rNick + (ent.data.carMode === "driver" ? " [За рулём]" : "");
+                    const admPrefix = ent.data.adminLevel > 0 ? `[ADM ${ent.data.adminLevel}] ` : "";
+                    tag.innerText = admPrefix + rNick + (ent.data.carMode === "driver" ? " [За рулём]" : "");
+                    if (ent.data.adminLevel > 0) tag.style.color = "#fca5a5";
                     labels.appendChild(tag);
                 }
             }
