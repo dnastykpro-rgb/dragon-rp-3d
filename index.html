@@ -9,7 +9,6 @@
         canvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
         canvas:active { cursor: grabbing; }
 
-        /* Полноэкранный современный лаунчер */
         #launcher-screen {
             position: fixed; inset: 0; z-index: 100;
             background: radial-gradient(circle at 75% 25%, #2e1065 0%, #0f172a 48%, #060913 100%);
@@ -18,7 +17,6 @@
         }
         #launcher-screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.03); }
 
-        /* Верхний левый угол: Никнейм */
         .top-left-nick {
             position: absolute; top: 32px; left: 32px;
             background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px);
@@ -32,47 +30,33 @@
         .top-left-nick input {
             width: 100%; background: rgba(30, 41, 59, 0.9); border: 1px solid #334155;
             border-radius: 10px; padding: 10px 14px; color: white; font-size: 15px; font-weight: 600; outline: none;
-            transition: border-color 0.2s;
         }
         .top-left-nick input:focus { border-color: #a855f7; }
         #nick-error { color: #f87171; font-size: 12px; margin-top: 6px; min-height: 16px; }
-
-        /* Центральный баннер лаунчера */
-        .launcher-center {
-            margin: auto; text-align: center; pointer-events: none;
-        }
+        .launcher-center { margin: auto; text-align: center; pointer-events: none; }
         .launcher-center h1 {
             font-size: 54px; font-weight: 900; letter-spacing: 2px;
             background: linear-gradient(135deg, #ffffff 0%, #c084fc 50%, #6366f1 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            text-shadow: 0 10px 40px rgba(168, 85, 247, 0.3);
         }
         .launcher-center p { color: #94a3b8; font-size: 16px; margin-top: 8px; }
 
-        /* Правый нижний угол: Выбор сервера + Кнопка Играть */
         .bottom-right-controls {
             position: absolute; bottom: 32px; right: 32px;
             display: flex; align-items: center; gap: 14px;
             background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px);
             padding: 14px 18px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
         }
         .bottom-right-controls select {
             background: #1e293b; color: white; border: 1px solid #334155;
-            padding: 15px 18px; border-radius: 14px; font-size: 15px; font-weight: 600;
-            outline: none; cursor: pointer; min-width: 240px;
+            padding: 15px 18px; border-radius: 14px; font-size: 15px; font-weight: 600; outline: none; min-width: 240px;
         }
         .bottom-right-controls button {
             background: linear-gradient(135deg, #9333ea 0%, #4f46e5 100%);
             color: white; border: none; padding: 15px 38px; border-radius: 14px;
             font-size: 17px; font-weight: 800; letter-spacing: 1px; cursor: pointer;
-            box-shadow: 0 8px 25px rgba(147, 51, 234, 0.45); transition: all 0.2s ease;
-        }
-        .bottom-right-controls button:hover {
-            transform: translateY(-2px); box-shadow: 0 12px 30px rgba(147, 51, 234, 0.65); filter: brightness(1.1);
         }
 
-        /* Современный экран загрузки */
         #loading-screen {
             position: fixed; inset: 0; z-index: 150; background: #070a12;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -87,15 +71,9 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-title { color: white; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
         #loading-status { color: #94a3b8; font-size: 14px; margin-bottom: 22px; }
-        .progress-track {
-            width: 360px; height: 8px; background: #1e293b; border-radius: 99px; overflow: hidden;
-        }
-        #progress-fill {
-            width: 0%; height: 100%; background: linear-gradient(90deg, #a855f7, #38bdf8);
-            border-radius: 99px; transition: width 0.15s ease-out;
-        }
+        .progress-track { width: 360px; height: 8px; background: #1e293b; border-radius: 99px; overflow: hidden; }
+        #progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #a855f7, #38bdf8); transition: width 0.15s ease-out; }
 
-        /* Игровой интерфейс (HUD) */
         #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
         #chat-container { position: absolute; top: 20px; left: 20px; width: 430px; pointer-events: auto; }
         #chat-messages {
@@ -122,22 +100,18 @@
 </head>
 <body>
 
-    <!-- Полноэкранный лаунчер -->
     <div id="launcher-screen">
-        <!-- Верхний левый угол: Ник -->
         <div class="top-left-nick">
             <label for="nick-input">Ваш игровой ник</label>
             <input type="text" id="nick-input" placeholder="Например: Domik_Brane" maxlength="20">
             <div id="nick-error"></div>
         </div>
 
-        <!-- Центр: Логотип -->
         <div class="launcher-center">
             <h1>RADMIR WEB RP</h1>
             <p>Официальный веб-лаунчер • 3D WebGL Engine</p>
         </div>
 
-        <!-- Правый нижний угол: Выбор сервера и кнопка Играть -->
         <div class="bottom-right-controls">
             <select id="server-select">
                 <option value="Server #01 | Арзамас">Server #01 | Арзамас (Онлайн: 418)</option>
@@ -148,7 +122,6 @@
         </div>
     </div>
 
-    <!-- Экран современной загрузки -->
     <div id="loading-screen">
         <div class="spinner-ring"></div>
         <div class="loading-title" id="loading-server-name">Подключение к серверу...</div>
@@ -158,7 +131,6 @@
         </div>
     </div>
 
-    <!-- Игровой HUD -->
     <div id="hud">
         <div id="server-info">
             <div id="server-badge">Server #01 | Арзамас</div>
@@ -176,7 +148,6 @@
     </div>
 
     <canvas id="glCanvas"></canvas>
-
     <script>
         const canvas = document.getElementById('glCanvas');
         const gl = canvas.getContext('webgl');
@@ -239,6 +210,7 @@
         gl.linkProgram(prog);
         gl.useProgram(prog);
         gl.enable(gl.DEPTH_TEST);
+
         function createGLTexture(type) {
             const c = document.createElement('canvas');
             c.width = 128; c.height = 128;
@@ -293,7 +265,6 @@
             brick: createGLTexture('brick'),
             white: createGLTexture('white')
         };
-
         const boxVerts = new Float32Array([
             -0.5,-0.5, 0.5,  0, 0, 1,  0,1,   0.5,-0.5, 0.5,  0, 0, 1,  1,1,   0.5, 0.5, 0.5,  0, 0, 1,  1,0,
             -0.5,-0.5, 0.5,  0, 0, 1,  0,1,   0.5, 0.5, 0.5,  0, 0, 1,  1,0,  -0.5, 0.5, 0.5,  0, 0, 1,  0,0,
@@ -319,13 +290,43 @@
         gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0);
         gl.enableVertexAttribArray(aNorm); gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12);
         gl.enableVertexAttribArray(aUV); gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+
+        function createSphereData(latBands, longBands) {
+            const verts = [];
+            for (let lat = 0; lat < latBands; lat++) {
+                const th1 = lat * Math.PI / latBands, th2 = (lat + 1) * Math.PI / latBands;
+                for (let lon = 0; lon < longBands; lon++) {
+                    const ph1 = lon * 2 * Math.PI / longBands, ph2 = (lon + 1) * 2 * Math.PI / longBands;
+                    const p = (th, ph) => [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)];
+                    const a = p(th1, ph1), b = p(th2, ph1), c = p(th2, ph2), d = p(th1, ph2);
+                    [a, b, c, a, c, d].forEach(v => {
+                        verts.push(v.at(0) * 0.5, v.at(1) * 0.5, v.at(2) * 0.5, v.at(0), v.at(1), v.at(2), 0.5, 0.5);
+                    });
+                }
+            }
+            return new Float32Array(verts);
+        }
+
+        const sphereVerts = createSphereData(14, 18);
+        const sphereVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, sphereVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, sphereVerts, gl.STATIC_DRAW);
+
         const uProj = gl.getUniformLocation(prog, 'uProj');
         const uView = gl.getUniformLocation(prog, 'uView');
         const uModel = gl.getUniformLocation(prog, 'uModel');
         const uUVScale = gl.getUniformLocation(prog, 'uUVScale');
         const uTint = gl.getUniformLocation(prog, 'uTint');
 
+        function bindBufferData(buffer) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 32, 0);
+            gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 32, 12);
+            gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 32, 24);
+        }
+
         function draw3DBox(x, y, z, sx, sy, sz, rotY, tex, r, g, b, uvX = 1, uvY = 1) {
+            bindBufferData(vbo);
             const c = Math.cos(rotY), s = Math.sin(rotY);
             const m = new Float32Array([
                 sx * c, 0, -sx * s, 0,
@@ -340,6 +341,22 @@
             gl.drawArrays(gl.TRIANGLES, 0, 36);
         }
 
+        function drawSmoothPart(x, y, z, sx, sy, sz, rotY, rotX, r, g, b) {
+            bindBufferData(sphereVbo);
+            const cy = Math.cos(rotY), sy_ = Math.sin(rotY);
+            const cx = Math.cos(rotX), sx_ = Math.sin(rotX);
+            const m = new Float32Array([
+                sx * cy, 0, -sx * sy_, 0,
+                sy * sy_ * sx_, sy * cx, sy * cy * sx_, 0,
+                sz * sy_ * cx, -sz * sx_, sz * cy * cx, 0,
+                x, y, z, 1
+            ]);
+            gl.uniformMatrix4fv(uModel, false, m);
+            gl.uniform2f(uUVScale, 1, 1);
+            gl.uniform3f(uTint, r, g, b);
+            gl.bindTexture(gl.TEXTURE_2D, textures.white);
+            gl.drawArrays(gl.TRIANGLES, 0, sphereVerts.length / 8);
+        }
         function setCamera(eyeX, eyeY, eyeZ, targetX, targetY, targetZ) {
             const aspect = W / H, fov = 1.05, near = 0.2, far = 300;
             const f = 1.0 / Math.tan(fov / 2);
@@ -393,7 +410,6 @@
             }
         });
 
-        // Плавная анимация загрузки при нажатии "ИГРАТЬ"
         function launchGame() {
             const nick = document.getElementById('nick-input').value.trim();
             if (nick.length < 3) {
@@ -405,7 +421,6 @@
             document.getElementById('server-badge').innerText = serverVal;
             document.getElementById('loading-server-name').innerText = "Вход на " + serverVal;
 
-            // Плавно скрываем лаунчер и показываем экран загрузки
             document.getElementById('launcher-screen').classList.add('hidden');
             const loader = document.getElementById('loading-screen');
             const fill = document.getElementById('progress-fill');
@@ -424,8 +439,8 @@
             const timer = setInterval(() => {
                 progress += 4;
                 fill.style.width = progress + "%";
-                if (stepIdx < steps.length && progress >= steps[stepIdx].p) {
-                    status.innerText = steps[stepIdx].text;
+                if (stepIdx < steps.length && progress >= steps.at(stepIdx).p) {
+                    status.innerText = steps.at(stepIdx).text;
                     stepIdx++;
                 }
                 if (progress >= 100) {
@@ -564,7 +579,7 @@
                 if (Math.abs(z) > 10) draw3DBox(0, 0.06, z, 0.35, 0.02, 5, 0, textures.white, 0.98, 0.8, 0.1, 1, 1);
             }
 
-            // Здания города
+            // Здания города и деревья
             draw3DBox(26, 5.5, -25, 28, 11, 14, 0, textures.brick, 1, 1, 1, 5, 2);
             draw3DBox(12, 11, -25, 6, 22, 6, 0, textures.brick, 1, 1, 1, 2, 4);
             draw3DBox(-26, 4.5, -22, 24, 9, 18, 0, textures.windows, 0.4, 0.8, 1.0, 4, 2);
@@ -574,7 +589,6 @@
             draw3DBox(-25, 12.5, 52, 14, 25, 14, 0, textures.windows, 1.0, 0.9, 0.65, 3, 5);
             draw3DBox(26, 10, 26, 14, 20, 14, 0, textures.windows, 0.85, 0.9, 0.95, 3, 4);
 
-            // Деревья
             for (let z = -72; z <= 72; z += 18) {
                 if (Math.abs(z) < 12) continue;
                 [-11, 11].forEach(tx => {
@@ -582,7 +596,6 @@
                     draw3DBox(tx, 3.8, z, 2.8, 3.0, 2.8, 0, textures.grass, 0.6, 1.1, 0.5, 2, 2);
                 });
             }
-
             // Машины
             cars.forEach(c => {
                 const cos = Math.cos(c.angle), sin = Math.sin(c.angle);
@@ -596,17 +609,111 @@
                 });
             });
 
-            // Анимированный 3D-зомби
+            // Реалистичный человек с анимациями в стиле GTA: San Andreas
             if (!currentCar) {
-                const cos = Math.cos(player.angle), sin = Math.sin(player.angle);
-                const swing = Math.sin(player.walkTime) * 0.25;
-                draw3DBox(player.x - 0.18 * cos + sin * swing, player.y + 0.4, player.z + 0.18 * sin + cos * swing, 0.24, 0.8, 0.24, player.angle, textures.white, 0.15, 0.2, 0.28, 1, 1);
-                draw3DBox(player.x + 0.18 * cos - sin * swing, player.y + 0.4, player.z - 0.18 * sin - cos * swing, 0.24, 0.8, 0.24, player.angle, textures.white, 0.15, 0.2, 0.28, 1, 1);
-                draw3DBox(player.x, player.y + 1.25, player.z, 0.72, 0.9, 0.38, player.angle, textures.white, 0.15, 0.35, 0.75, 1, 1);
-                draw3DBox(player.x - 0.48 * cos + sin * 0.25, player.y + 1.48, player.z + 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, textures.white, 0.25, 0.75, 0.35, 1, 1);
-                draw3DBox(player.x + 0.48 * cos + sin * 0.25, player.y + 1.48, player.z - 0.48 * sin + cos * 0.25, 0.2, 0.22, 0.65, player.angle, textures.white, 0.25, 0.75, 0.35, 1, 1);
-                draw3DBox(player.x, player.y + 1.95, player.z, 0.5, 0.5, 0.5, player.angle, textures.white, 0.25, 0.75, 0.35, 1, 1);
-                draw3DBox(player.x + sin * 0.26, player.y + 2.0, player.z + cos * 0.26, 0.32, 0.08, 0.04, player.angle, textures.white, 0.95, 0.15, 0.15, 1, 1);
+                const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'];
+                const isSprinting = isMoving && keys['ShiftLeft'];
+                const isJumping = player.y > 0.05;
+                const t = Date.now() * 0.004;
+
+                let torsoLean = 0, swagger = 0, bob = 0;
+                let legL = 0, legR = 0, kneeL = 0, kneeR = 0;
+                let armL = 0, armR = 0, elbowL = 0.25, elbowR = 0.25;
+
+                if (isJumping) {
+                    torsoLean = 0.15;
+                    legL = -0.85; kneeL = 1.1;
+                    legR = 0.35;  kneeR = 0.4;
+                    armL = -2.1;  elbowL = 0.5;
+                    armR = -1.9;  elbowR = 0.5;
+                } else if (isSprinting) {
+                    const runCycle = player.walkTime * 1.15;
+                    torsoLean = 0.28;
+                    swagger = Math.sin(runCycle) * 0.12;
+                    bob = Math.abs(Math.cos(runCycle)) * 0.08;
+                    legL = Math.sin(runCycle) * 0.95;
+                    legR = -Math.sin(runCycle) * 0.95;
+                    kneeL = Math.max(0, -Math.sin(runCycle)) * 1.1;
+                    kneeR = Math.max(0, Math.sin(runCycle)) * 1.1;
+                    armL = -Math.sin(runCycle) * 1.1;
+                    armR = Math.sin(runCycle) * 1.1;
+                    elbowL = 1.15; elbowR = 1.15;
+                } else if (isMoving) {
+                    const walkCycle = player.walkTime * 0.95;
+                    torsoLean = 0.06;
+                    swagger = Math.sin(walkCycle) * 0.09;
+                    bob = Math.abs(Math.cos(walkCycle)) * 0.035;
+                    legL = Math.sin(walkCycle) * 0.55;
+                    legR = -Math.sin(walkCycle) * 0.55;
+                    kneeL = Math.max(0, -Math.sin(walkCycle)) * 0.55;
+                    kneeR = Math.max(0, Math.sin(walkCycle)) * 0.55;
+                    armL = -Math.sin(walkCycle) * 0.5;
+                    armR = Math.sin(walkCycle) * 0.5;
+                    elbowL = 0.45; elbowR = 0.45;
+                } else {
+                    bob = Math.sin(t) * 0.012;
+                    swagger = Math.sin(t * 0.7) * 0.03;
+                    armL = Math.sin(t) * 0.05;
+                    armR = -Math.sin(t) * 0.05;
+                    elbowL = 0.3; elbowR = 0.3;
+                }
+
+                const cos = Math.cos(player.angle + swagger);
+                const sin = Math.sin(player.angle + swagger);
+                const baseY = player.y + bob;
+
+                const skin = [0.92, 0.74, 0.62];
+                const hair = [0.14, 0.11, 0.09];
+                const jacket = [0.12, 0.22, 0.42];
+                const jeans = [0.13, 0.17, 0.25];
+                const shoes = [0.94, 0.94, 0.96];
+
+                const part = (ox, oy, oz, sx, sy, sz, rx, col) => {
+                    const leanZ = oz + (oy - 0.9) * Math.sin(torsoLean);
+                    const wx = player.x + ox * cos + leanZ * sin;
+                    const wz = player.z - ox * sin + leanZ * cos;
+                    drawSmoothPart(wx, baseY + oy, wz, sx, sy, sz, player.angle + swagger, rx + torsoLean, col.at(0), col.at(1), col.at(2));
+                };
+
+                // Голова, причёска, глаза и шея
+                part(0, 1.72, 0.02, 0.24, 0.28, 0.26, -torsoLean * 0.5, skin);
+                part(0, 1.77, 0.0, 0.255, 0.23, 0.27, -0.1, hair);
+                part(-0.052, 1.74, 0.13, 0.032, 0.022, 0.02, 0, [0.08, 0.08, 0.08]);
+                part(0.052, 1.74, 0.13, 0.032, 0.022, 0.02, 0, [0.08, 0.08, 0.08]);
+                part(0, 1.56, 0.01, 0.11, 0.14, 0.11, 0, skin);
+
+                // Торс
+                part(0, 1.32, 0, 0.44, 0.48, 0.24, 0, jacket);
+                part(0, 1.04, 0, 0.35, 0.32, 0.21, 0, jacket);
+                part(0, 1.34, 0.11, 0.14, 0.42, 0.04, 0, [0.9, 0.92, 0.95]);
+
+                // Левая и правая руки
+                const lShoulderZ = -Math.sin(armL) * 0.15;
+                const lShoulderY = 1.32 + (1 - Math.cos(armL)) * 0.12;
+                part(-0.26, lShoulderY, lShoulderZ, 0.13, 0.33, 0.13, armL, jacket);
+                part(-0.26, lShoulderY - 0.26 * Math.cos(armL - elbowL), lShoulderZ - Math.sin(armL - elbowL) * 0.24, 0.10, 0.31, 0.10, armL - elbowL, skin);
+
+                const rShoulderZ = -Math.sin(armR) * 0.15;
+                const rShoulderY = 1.32 + (1 - Math.cos(armR)) * 0.12;
+                part(0.26, rShoulderY, rShoulderZ, 0.13, 0.33, 0.13, armR, jacket);
+                part(0.26, rShoulderY - 0.26 * Math.cos(armR - elbowR), rShoulderZ - Math.sin(armR - elbowR) * 0.24, 0.10, 0.31, 0.10, armR - elbowR, skin);
+
+                // Левая и правая ноги
+                const lKneeZ = -Math.sin(legL) * 0.22;
+                const lKneeY = 0.48 + (1 - Math.cos(legL)) * 0.18;
+                part(-0.11, 0.68, lKneeZ * 0.5, 0.16, 0.44, 0.17, legL, jeans);
+                const lFootZ = lKneeZ - Math.sin(legL + kneeL) * 0.22;
+                const lFootY = Math.max(0.07, lKneeY - 0.40 * Math.cos(legL + kneeL));
+                part(-0.11, (lKneeY + lFootY) * 0.5, (lKneeZ + lFootZ) * 0.5, 0.13, 0.42, 0.14, legL + kneeL, jeans);
+                part(-0.11, lFootY, lFootZ + 0.06, 0.14, 0.11, 0.28, 0, shoes);
+
+                const rKneeZ = -Math.sin(legR) * 0.22;
+                const rKneeY = 0.48 + (1 - Math.cos(legR)) * 0.18;
+                part(0.11, 0.68, rKneeZ * 0.5, 0.16, 0.44, 0.17, legR, jeans);
+                const rFootZ = rKneeZ - Math.sin(legR + kneeR) * 0.22;
+                const rFootY = Math.max(0.07, rKneeY - 0.40 * Math.cos(legR + kneeR));
+                part(0.11, (rKneeY + rFootY) * 0.5, (rKneeZ + rFootZ) * 0.5, 0.13, 0.42, 0.14, legR + kneeR, jeans);
+                part(0.11, rFootY, rFootZ + 0.06, 0.14, 0.11, 0.28, 0, shoes);
             }
         }
         loop();
