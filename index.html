@@ -100,82 +100,101 @@
         let playerNick = "Domik_Brane";
         let isGameStarted = false;
         let isChatOpen = false;
-        let camAngle = 0;
-        let camPitch = 0.42;
+        let camYaw = 0;
+        let camPitch = 0.32;
 
         const player = { x: -4, z: 10, angle: 0, walkTime: 0 };
         const cars = [
-            { x: 3.5, z: 10, angle: 0, speed: 0, color: '#1e293b', roof: '#0f172a', name: 'BMW M5' },
-            { x: -16, z: -12, angle: 0.5, speed: 0, color: '#9333ea', roof: '#581c87', name: 'Sport Coupe' }
+            { x: 3.5, z: 10, angle: 0, speed: 0, color: '#18181b', roof: '#09090b', name: 'BMW M5 F90' },
+            { x: -16, z: -12, angle: 0.5, speed: 0, color: '#9333ea', roof: '#6b21a8', name: 'Nissan GT-R' }
         ];
         let currentCar = null;
 
         const buildings = [
-            { x: 25, z: -25, w: 28, d: 14, h: 10, color: '#991b1b', top: '#7f1d1d' },
-            { x: 12, z: -25, w: 6, d: 6, h: 20, color: '#b91c1c', top: '#14532d' },
-            { x: -26, z: -22, w: 24, d: 18, h: 9, color: '#0284c7', top: '#38bdf8' },
-            { x: 12, z: 42, w: 5, d: 5, h: 4, color: '#f8fafc', top: '#2563eb' },
-            { x: -25, z: 24, w: 14, d: 14, h: 16, color: '#cbd5e1', top: '#94a3b8' },
-            { x: -25, z: 52, w: 14, d: 14, h: 24, color: '#fde68a', top: '#f59e0b' },
-            { x: 26, z: 26, w: 14, d: 14, h: 18, color: '#e2e8f0', top: '#64748b' }
+            { x: 26, z: -25, w: 28, d: 14, h: 11, color: '#991b1b', top: '#7f1d1d', windows: false },
+            { x: 12, z: -25, w: 6, d: 6, h: 22, color: '#b91c1c', top: '#14532d', windows: false },
+            { x: -26, z: -22, w: 24, d: 18, h: 9, color: '#0284c7', top: '#0369a1', windows: true },
+            { x: 12, z: 42, w: 5, d: 5, h: 4, color: '#f8fafc', top: '#2563eb', windows: false },
+            { x: -25, z: 24, w: 14, d: 14, h: 18, color: '#cbd5e1', top: '#64748b', windows: true },
+            { x: -25, z: 52, w: 14, d: 14, h: 25, color: '#fde68a', top: '#d97706', windows: true },
+            { x: 26, z: 26, w: 14, d: 14, h: 20, color: '#e2e8f0', top: '#475569', windows: true }
         ];
+
+        const trees = [];
+        for (let z = -75; z <= 75; z += 18) {
+            if (Math.abs(z) < 12) continue;
+            trees.push({ x: -11, z: z }, { x: 11, z: z });
+        }
 
         function project(x, y, z, camX, camY, camZ) {
             let dx = x - camX, dy = y - camY, dz = z - camZ;
-            let cos = Math.cos(-camAngle), sin = Math.sin(-camAngle);
-            let rx = dx * cos - dz * sin;
-            let rz = dx * sin + dz * cos;
-            let ry = dy * Math.cos(camPitch) - rz * Math.sin(camPitch);
-            let fz = dy * Math.sin(camPitch) + rz * Math.cos(camPitch);
-            if (fz < 0.5) return null;
-            let fov = H * 0.85;
+            let cosY = Math.cos(-camYaw), sinY = Math.sin(-camYaw);
+            let rx = dx * cosY - dz * sinY;
+            let rz = dx * sinY + dz * cosY;
+
+            let cosP = Math.cos(-camPitch), sinP = Math.sin(-camPitch);
+            let ry = dy * cosP - rz * sinP;
+            let fz = dy * sinP + rz * cosP;
+
+            if (fz < 0.4) return null;
+            let fov = H * 0.9;
             return { x: W / 2 + (rx / fz) * fov, y: H / 2 - (ry / fz) * fov, z: fz };
         }
 
-        function drawBox(cx, cy, cz, w, h, d, angle, colorSide, colorTop, camX, camY, camZ) {
+        function drawBox(cx, cy, cz, w, h, d, angle, colorSide, colorTop, camX, camY, camZ, hasWindows = false) {
             let hw = w / 2, hd = d / 2;
             let cos = Math.cos(angle), sin = Math.sin(angle);
             let pts3d = [
                 [-hw, 0, -hd], [hw, 0, -hd], [hw, 0, hd], [-hw, 0, hd],
                 [-hw, h, -hd], [hw, h, -hd], [hw, h, hd], [-hw, h, hd]
             ];
-            let c = pts3d.map(p => project(p[0] * cos - p[2] * sin + cx, p[1] + cy, p[0] * sin + p[2] * cos + cz, camX, camY, camZ));
+            let c = pts3d.map(p => project(p * cos - p * sin + cx, p + cy, p * sin + p * cos + cz, camX, camY, camZ));
             if (c.some(pt => pt === null)) return;
 
             function poly(idxList, col) {
                 ctx.beginPath();
-                ctx.moveTo(c[idxList[0]].x, c[idxList[0]].y);
-                for (let i = 1; i < idxList.length; i++) {
-                    ctx.lineTo(c[idxList[i]].x, c[idxList[i]].y);
-                }
+                ctx.moveTo(c[idxList].x, c[idxList].y);
+                for (let i = 1; i < idxList.length; i++) ctx.lineTo(c[idxList[i]].x, c[idxList[i]].y);
                 ctx.closePath();
                 ctx.fillStyle = col;
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+                ctx.strokeStyle = 'rgba(0,0,0,0.22)';
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
 
-            poly([0, 1, 5, 4], colorSide);
-            poly([1, 2, 6, 5], colorSide);
-            poly([2, 3, 7, 6], colorSide);
-            poly([3, 0, 4, 7], colorSide);
-            poly([4, 5, 6, 7], colorTop);
+            poly(, colorSide);
+            poly(, colorSide);
+            poly(, colorSide);
+            poly(, colorSide);
+            poly(, colorTop);
+
+            if (hasWindows && h >= 8) {
+                for (let wy = 2.5; wy < h - 2; wy += 3.5) {
+                    let winP = project(cx, cy + wy, cz - hd - 0.1, camX, camY, camZ);
+                    let winP2 = project(cx, cy + wy, cz + hd + 0.1, camX, camY, camZ);
+                    [winP, winP2].forEach(wp => {
+                        if (wp && wp.z < 120) {
+                            let size = Math.max(2, 160 / wp.z);
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.fillRect(wp.x - size * 1.4, wp.y - size / 2, size * 0.8, size);
+                            ctx.fillRect(wp.x + size * 0.6, wp.y - size / 2, size * 0.8, size);
+                        }
+                    });
+                }
+            }
         }
-        // Вращение камеры мышью (клик по экрану фиксирует мышь как в GTA, или можно просто зажать кнопку мыши)
         let isDragging = false;
         canvas.addEventListener('mousedown', () => {
             isDragging = true;
-            if (isGameStarted && !isChatOpen && canvas.requestPointerLock) {
-                canvas.requestPointerLock();
-            }
+            if (isGameStarted && !isChatOpen && canvas.requestPointerLock) canvas.requestPointerLock();
         });
         window.addEventListener('mouseup', () => { isDragging = false; });
         window.addEventListener('mousemove', (e) => {
             if (!isGameStarted || isChatOpen) return;
             if (document.pointerLockElement === canvas || isDragging) {
-                camAngle += e.movementX * 0.005;
-                camPitch = Math.max(0.15, Math.min(0.85, camPitch + e.movementY * 0.003));
+                camYaw += e.movementX * 0.005;
+                camPitch = Math.max(-0.1, Math.min(1.1, camPitch + e.movementY * 0.004));
             }
         });
 
@@ -191,7 +210,7 @@
             document.getElementById('hud').style.display = 'block';
             isGameStarted = true;
             addChatMessage(`<span style="color:#facc15">[Сервер]: Добро пожаловать на RADMIR WEB RP, ${playerNick}!</span>`);
-            addChatMessage(`<span style="color:#c084fc">[Подсказка]: Кликни мышью по экрану, чтобы вращать камеру. Нажми [F] у машины.</span>`);
+            addChatMessage(`<span style="color:#c084fc">[Подсказка]: Кликни мышью по экрану, чтобы крутить камеру вверх/вниз и вокруг.</span>`);
         }
 
         function addChatMessage(html) {
@@ -237,7 +256,7 @@
                     for (let c of cars) {
                         if (Math.hypot(player.x - c.x, player.z - c.z) < 4.5) {
                             currentCar = c;
-                            addChatMessage(`<span style="color:#f472b6">* ${playerNick} сел в ${c.name}</span>`);
+                            addChatMessage(`<span style="color:#f472b6">* ${playerNick} открыл дверь и сел в ${c.name}</span>`);
                             break;
                         }
                     }
@@ -259,10 +278,10 @@
                 if (!currentCar) {
                     let spd = keys['ShiftLeft'] ? 0.25 : 0.14;
                     let moved = false, dx = 0, dz = 0;
-                    if (keys['KeyW']) { dx += Math.sin(camAngle); dz += Math.cos(camAngle); moved = true; }
-                    if (keys['KeyS']) { dx -= Math.sin(camAngle); dz -= Math.cos(camAngle); moved = true; }
-                    if (keys['KeyA']) { dx -= Math.cos(camAngle); dz += Math.sin(camAngle); moved = true; }
-                    if (keys['KeyD']) { dx += Math.cos(camAngle); dz -= Math.sin(camAngle); moved = true; }
+                    if (keys['KeyW']) { dx += Math.sin(camYaw); dz += Math.cos(camYaw); moved = true; }
+                    if (keys['KeyS']) { dx -= Math.sin(camYaw); dz -= Math.cos(camYaw); moved = true; }
+                    if (keys['KeyA']) { dx -= Math.cos(camYaw); dz += Math.sin(camYaw); moved = true; }
+                    if (keys['KeyD']) { dx += Math.cos(camYaw); dz -= Math.sin(camYaw); moved = true; }
                     if (moved) {
                         player.x += dx * spd;
                         player.z += dz * spd;
@@ -272,7 +291,7 @@
                         player.walkTime = 0;
                     }
                 } else {
-                    if (keys['KeyW']) currentCar.speed = Math.min(currentCar.speed + 0.02, 0.75);
+                    if (keys['KeyW']) currentCar.speed = Math.min(currentCar.speed + 0.02, 0.8);
                     else if (keys['KeyS']) currentCar.speed = Math.max(currentCar.speed - 0.02, -0.35);
                     else currentCar.speed *= 0.96;
 
@@ -287,9 +306,10 @@
             }
 
             let target = currentCar || player;
-            let camX = target.x - Math.sin(camAngle) * 16;
-            let camY = 9;
-            let camZ = target.z - Math.cos(camAngle) * 16;
+            let dist = 11;
+            let camX = target.x - Math.sin(camYaw) * Math.cos(camPitch) * dist;
+            let camY = 1.8 + Math.sin(camPitch) * dist;
+            let camZ = target.z - Math.cos(camYaw) * Math.cos(camPitch) * dist;
 
             const loc = document.getElementById('location-badge');
             if (target.x > 5 && target.z < -5) loc.innerText = "Район: Арзамасский Кремль";
@@ -297,28 +317,41 @@
             else if (target.z > 32) loc.innerText = "Район: Пост ДПС";
             else loc.innerText = "Район: Центральный проспект";
 
+            let horizonY = H * (0.48 + Math.sin(camPitch) * 0.45);
             ctx.fillStyle = '#38bdf8';
-            ctx.fillRect(0, 0, W, H * 0.45);
-            ctx.fillStyle = '#3f6212';
-            ctx.fillRect(0, H * 0.45, W, H * 0.55);
+            ctx.fillRect(0, 0, W, Math.max(0, horizonY));
+            ctx.fillStyle = '#365314';
+            ctx.fillRect(0, Math.max(0, horizonY), W, H);
 
-            drawBox(0, 0, 0, 14, 0.05, 220, 0, '#1e293b', '#334155', camX, camY, camZ);
-            drawBox(0, 0, 0, 220, 0.05, 14, 0, '#1e293b', '#334155', camX, camY, camZ);
-            for (let z = -90; z <= 90; z += 14) {
-                if (Math.abs(z) > 10) drawBox(0, 0.06, z, 0.4, 0.02, 5, 0, '#facc15', '#facc15', camX, camY, camZ);
+            drawBox(0, 0, 0, 18, 0.03, 240, 0, '#64748b', '#94a3b8', camX, camY, camZ);
+            drawBox(0, 0.03, 0, 13, 0.04, 240, 0, '#0f172a', '#1e293b', camX, camY, camZ);
+            drawBox(0, 0.03, 0, 240, 0.04, 13, 0, '#0f172a', '#1e293b', camX, camY, camZ);
+            for (let z = -100; z <= 100; z += 14) {
+                if (Math.abs(z) > 10) drawBox(0, 0.08, z, 0.35, 0.02, 5, 0, '#facc15', '#facc15', camX, camY, camZ);
             }
 
             let renderList = [];
             buildings.forEach(b => {
                 let p = project(b.x, b.h / 2, b.z, camX, camY, camZ);
-                if (p) renderList.push({ z: p.z, draw: () => drawBox(b.x, 0, b.z, b.w, b.h, b.d, 0, b.color, b.top, camX, camY, camZ) });
+                if (p) renderList.push({ z: p.z, draw: () => drawBox(b.x, 0, b.z, b.w, b.h, b.d, 0, b.color, b.top, camX, camY, camZ, b.windows) });
+            });
+
+            trees.forEach(t => {
+                let p = project(t.x, 2, t.z, camX, camY, camZ);
+                if (p) renderList.push({ z: p.z, draw: () => {
+                    drawBox(t.x, 0, t.z, 0.5, 2.5, 0.5, 0, '#78350f', '#451a03', camX, camY, camZ);
+                    drawBox(t.x, 2.5, t.z, 2.8, 3.2, 2.8, 0, '#15803d', '#22c55e', camX, camY, camZ);
+                }});
             });
 
             cars.forEach(c => {
                 let p = project(c.x, 1, c.z, camX, camY, camZ);
                 if (p) renderList.push({ z: p.z, draw: () => {
-                    drawBox(c.x, 0.2, c.z, 2.2, 0.7, 4.4, c.angle, c.color, c.roof, camX, camY, camZ);
-                    drawBox(c.x, 0.9, c.z, 1.8, 0.55, 2.2, c.angle, '#090d16', '#1e293b', camX, camY, camZ);
+                    drawBox(c.x, 0.35, c.z, 2.2, 0.65, 4.4, c.angle, c.color, c.roof, camX, camY, camZ);
+                    drawBox(c.x, 1.0, c.z, 1.8, 0.55, 2.2, c.angle, '#020617', '#1e293b', camX, camY, camZ);
+                    let fx = c.x + Math.sin(c.angle) * 2.22;
+                    let fz = c.z + Math.cos(c.angle) * 2.22;
+                    drawBox(fx, 0.55, fz, 1.6, 0.2, 0.1, c.angle, '#fef08a', '#fef08a', camX, camY, camZ);
                 }});
             });
 
@@ -330,20 +363,19 @@
                     drawBox(player.x + 0.18, 0, player.z - swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
                     drawBox(player.x, 0.8, player.z, 0.75, 0.9, 0.38, player.angle, '#1d4ed8', '#3b82f6', camX, camY, camZ);
                     drawBox(player.x, 1.7, player.z, 0.5, 0.5, 0.5, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
-                    let headPos = project(player.x, 2.5, player.z, camX, camY, camZ);
+                    let headPos = project(player.x, 2.45, player.z, camX, camY, camZ);
                     if (headPos) {
                         ctx.fillStyle = 'white';
                         ctx.font = 'bold 13px Segoe UI';
                         ctx.textAlign = 'center';
-                        ctx.fillText(playerNick, headPos.x, headPos.y);
-                    }
-                }});
-            }
-
-            renderList.sort((a, b) => b.z - a.z);
-            renderList.forEach(item => item.draw());
-        }
-        loop();
-    </script>
+                         ctx.fillText(playerNick, headPos.x, headPos.y);
+                        }
+                         }});
+                        }
+                         renderList.sort((a, b) => b.z - a.z);
+                         renderList.forEach(item => item.draw());
+                        }
+                         loop();
+            </script>
 </body>
 </html>
