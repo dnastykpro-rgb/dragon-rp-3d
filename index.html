@@ -2,23 +2,23 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Radmir Style RP - 3D Browser</title>
+    <title>RADMIR WEB RP</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; user-select: none; }
         body { overflow: hidden; background: #0f172a; }
-        
-        /* Меню входа со скруглениями */
+        canvas { display: block; width: 100vw; height: 100vh; }
+
         #menu-overlay {
-            position: fixed; inset: 0; background: rgba(10, 14, 24, 0.85);
-            backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; z-index: 100;
+            position: fixed; inset: 0; background: rgba(10, 14, 24, 0.88);
+            backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 100;
         }
         .menu-box {
-            background: rgba(24, 28, 42, 0.95); border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 24px; padding: 36px; width: 400px; text-align: center; color: white;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+            background: #181c2a; border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 24px; padding: 36px; width: 390px; text-align: center; color: white;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8);
         }
-        .menu-box h1 { font-size: 30px; margin-bottom: 6px; background: linear-gradient(90deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .menu-box p { font-size: 14px; color: #94a3b8; margin-bottom: 24px; }
+        .menu-box h1 { font-size: 28px; margin-bottom: 6px; color: #c084fc; }
+        .menu-box p { font-size: 14px; color: #94a3b8; margin-bottom: 22px; }
         .menu-box input, .menu-box select {
             width: 100%; padding: 13px 16px; margin-bottom: 14px; border-radius: 14px;
             border: 1px solid #334155; background: #1e293b; color: white; font-size: 15px; outline: none;
@@ -26,32 +26,31 @@
         .menu-box button {
             width: 100%; padding: 14px; border-radius: 14px; border: none;
             background: linear-gradient(135deg, #9333ea, #6366f1); color: white;
-            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            font-size: 16px; font-weight: bold; cursor: pointer;
         }
-        .menu-box button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(147, 51, 234, 0.4); }
+        .menu-box button:hover { filter: brightness(1.15); }
         #menu-error { color: #f87171; font-size: 13px; margin-bottom: 10px; min-height: 18px; }
 
-        /* Игровой HUD */
         #hud { display: none; position: fixed; inset: 0; pointer-events: none; }
-        #chat-container { position: absolute; top: 20px; left: 20px; width: 440px; pointer-events: auto; }
+        #chat-container { position: absolute; top: 20px; left: 20px; width: 430px; pointer-events: auto; }
         #chat-messages {
-            background: rgba(15, 23, 42, 0.65); border-radius: 16px; padding: 14px;
-            height: 190px; overflow-y: auto; color: white; font-size: 14px; line-height: 1.45;
-            display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(15, 23, 42, 0.7); border-radius: 16px; padding: 14px;
+            height: 185px; overflow-y: auto; color: white; font-size: 14px; line-height: 1.45;
+            display: flex; flex-direction: column; justify-content: flex-end; border: 1px solid rgba(255,255,255,0.1);
         }
         #chat-input {
             display: none; width: 100%; margin-top: 8px; padding: 11px 15px; border-radius: 12px;
-            border: 1px solid #a855f7; background: rgba(15, 23, 42, 0.95); color: white; font-size: 14px; outline: none;
+            border: 1px solid #a855f7; background: #0f172a; color: white; font-size: 14px; outline: none;
         }
         #server-info {
             position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.75);
-            padding: 12px 18px; border-radius: 16px; text-align: right; border: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 18px; border-radius: 16px; text-align: right; border: 1px solid rgba(255,255,255,0.1);
         }
         #server-badge { color: #c084fc; font-weight: bold; font-size: 15px; }
         #money-badge { color: #4ade80; font-weight: bold; font-size: 18px; margin-top: 4px; }
         #location-badge { color: #cbd5e1; font-size: 13px; margin-top: 4px; }
         #controls-hint {
-            position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.7);
+            position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.75);
             color: #e2e8f0; padding: 12px 18px; border-radius: 16px; font-size: 13px; line-height: 1.6;
         }
     </style>
@@ -61,8 +60,8 @@
     <div id="menu-overlay">
         <div class="menu-box">
             <h1>RADMIR WEB RP</h1>
-            <p>Выбери сервер и начни игру в городе</p>
-            <input type="text" id="nick-input" placeholder="Ник (например, Danila_Dragon)" maxlength="20">
+            <p>Выбери сервер и начни игру в 3D городе</p>
+            <input type="text" id="nick-input" placeholder="Ник (например, Domik_Brane)" maxlength="20">
             <select id="server-select">
                 <option value="Server #01 | Арзамас">Server #01 | Арзамас</option>
                 <option value="Server #02 | Южный">Server #02 | Южный</option>
@@ -76,180 +75,90 @@
         <div id="server-info">
             <div id="server-badge">Server #01 | Арзамас</div>
             <div id="money-badge">50 000 ₽</div>
-            <div id="location-badge">Район: Центральная площадь</div>
+            <div id="location-badge">Район: Центральный проспект</div>
         </div>
         <div id="chat-container">
             <div id="chat-messages"></div>
             <input type="text" id="chat-input" placeholder="Сообщение или команды: /me, /do, /n, /gps...">
         </div>
         <div id="controls-hint">
-            <b>WASD</b> — Ходьба / Езда | <b>Shift</b> — Бег | <b>Пробел</b> — Прыжок<br>
-            <b>F</b> — Сесть / Выйти из машины | <b>T</b> — Чат | <b>Мышь</b> — Поворот камеры
+            <b>WASD</b> — Ходьба / Езда | <b>Shift</b> — Бег<br>
+            <b>F</b> — Сесть / Выйти из машины | <b>T</b> — Чат | <b>Q / E</b> — Поворот камеры
         </div>
     </div>
-    <script src="https://cloudflare.com"></script>
+
+    <canvas id="gameCanvas"></canvas>
     <script>
-        let playerNick = "Player";
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let W, H;
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let playerNick = "Domik_Brane";
         let isGameStarted = false;
         let isChatOpen = false;
         let camAngle = 0;
 
-        // 1. Сцена, небо и мягкий туман
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x7dd3fc);
-        scene.fog = new THREE.Fog(0x7dd3fc, 60, 260);
-
-        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 400);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        document.body.appendChild(renderer.domElement);
-
-        // Освещение и солнце с тенями
-        scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-        const sun = new THREE.DirectionalLight(0xfffbeb, 1.15);
-        sun.position.set(80, 120, 60);
-        sun.castShadow = true;
-        sun.shadow.mapSize.width = 2048;
-        sun.shadow.mapSize.height = 2048;
-        const d = 130;
-        sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
-        sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
-        scene.add(sun);
-
-        // 2. Земля, дороги и перекресток в стиле Арзамаса
-        const grass = new THREE.Mesh(
-            new THREE.PlaneGeometry(500, 500),
-            new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.9 })
-        );
-        grass.rotation.x = -Math.PI / 2;
-        grass.receiveShadow = true;
-        scene.add(grass);
-
-        function createRoad(w, l, x, z) {
-            const road = new THREE.Mesh(
-                new THREE.BoxGeometry(w, 0.1, l),
-                new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 })
-            );
-            road.position.set(x, 0.05, z);
-            road.receiveShadow = true;
-            scene.add(road);
-        }
-        createRoad(16, 360, 0, 0);
-        createRoad(360, 16, 0, 0);
-
-        for (let z = -170; z <= 170; z += 12) {
-            if (Math.abs(z) < 12) continue;
-            const line = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 5), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
-            line.rotation.x = -Math.PI / 2;
-            line.position.set(0, 0.11, z);
-            scene.add(line);
-        }
-        // 3. Знаковые локации Radmir RP
-        const kremlinWall = new THREE.Mesh(
-            new THREE.BoxGeometry(40, 8, 2),
-            new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7 })
-        );
-        kremlinWall.position.set(32, 4, -25);
-        kremlinWall.castShadow = true; kremlinWall.receiveShadow = true;
-        scene.add(kremlinWall);
-
-        const tower = new THREE.Mesh(
-            new THREE.BoxGeometry(7, 18, 7),
-            new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.6 })
-        );
-        tower.position.set(14, 9, -25);
-        tower.castShadow = true;
-        scene.add(tower);
-
-        const roof = new THREE.Mesh(
-            new THREE.ConeGeometry(5.5, 7, 4),
-            new THREE.MeshStandardMaterial({ color: 0x14532d })
-        );
-        roof.position.set(14, 21.5, -25);
-        roof.rotation.y = Math.PI / 4;
-        scene.add(roof);
-
-        // Автосалон со стеклами
-        const salonBase = new THREE.Mesh(
-            new THREE.BoxGeometry(28, 9, 20),
-            new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.15, transparent: true, opacity: 0.75 })
-        );
-        salonBase.position.set(-28, 4.5, -24);
-        salonBase.castShadow = true;
-        scene.add(salonBase);
-
-        const salonRoof = new THREE.Mesh(
-            new THREE.BoxGeometry(30, 1.5, 22),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a })
-        );
-        salonRoof.position.set(-28, 9.5, -24);
-        scene.add(salonRoof);
-
-        // Пост ДПС
-        const dpsBooth = new THREE.Mesh(
-            new THREE.BoxGeometry(5, 3.5, 5),
-            new THREE.MeshStandardMaterial({ color: 0xf8fafc })
-        );
-        dpsBooth.position.set(12, 1.75, 45);
-        dpsBooth.castShadow = true;
-        const dpsStripe = new THREE.Mesh(
-            new THREE.BoxGeometry(5.1, 0.7, 5.1),
-            new THREE.MeshStandardMaterial({ color: 0x2563eb })
-        );
-        dpsStripe.position.set(12, 1.8, 45);
-        scene.add(dpsBooth, dpsStripe);
-
-        // Многоэтажки
-        function createPanelHouse(x, z, floors, colorHex) {
-            const h = floors * 3.2;
-            const house = new THREE.Mesh(
-                new THREE.BoxGeometry(16, h, 14),
-                new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.65 })
-            );
-            house.position.set(x, h / 2, z);
-            house.castShadow = true; house.receiveShadow = true;
-            scene.add(house);
-        }
-        createPanelHouse(-26, 26, 5, 0xd1d5db);
-        createPanelHouse(-26, 55, 9, 0xfde68a);
-        createPanelHouse(28, 28, 7, 0xcbd5e1);
-        createPanelHouse(28, 65, 5, 0xfecaca);
-
-        // 4. Персонаж (Зомби-скин)
-        const playerGroup = new THREE.Group();
-        const pBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.45), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
-        pBody.position.y = 1.2; pBody.castShadow = true;
-        const pHead = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.55, 0.55), new THREE.MeshStandardMaterial({ color: 0x4ade80 }));
-        pHead.position.y = 2.1; pHead.castShadow = true;
-        playerGroup.add(pBody, pHead);
-        playerGroup.position.set(-4, 0, 12);
-        scene.add(playerGroup);
-
-        // 5. Автопарк (2 машины с блеском)
-        const cars = [];
-        function createCar(x, z, colorHex) {
-            const car = new THREE.Group();
-            const body = new THREE.Mesh(
-                new THREE.BoxGeometry(2.2, 0.8, 4.5),
-                new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.7, roughness: 0.18 })
-            );
-            body.position.y = 0.7; body.castShadow = true;
-            const cabin = new THREE.Mesh(
-                new THREE.BoxGeometry(1.8, 0.65, 2.3),
-                new THREE.MeshStandardMaterial({ color: 0x090d16, metalness: 0.9, roughness: 0.1 })
-            );
-            cabin.position.set(0, 1.38, -0.2); cabin.castShadow = true;
-            car.add(body, cabin);
-            car.position.set(x, 0, z);
-            scene.add(car);
-            cars.push({ mesh: car, speed: 0 });
-        }
-        createCar(3, 12, 0x111827);
-        createCar(-18, -12, 0x9333ea);
+        const player = { x: -4, z: 10, angle: 0, walkTime: 0 };
+        const cars = [
+            { x: 3.5, z: 10, angle: 0, speed: 0, color: '#1e293b', roof: '#0f172a', name: 'BMW M5' },
+            { x: -16, z: -12, angle: 0.5, speed: 0, color: '#9333ea', roof: '#581c87', name: 'Sport Coupe' }
+        ];
         let currentCar = null;
-        // 6. Меню и Чат
+
+        const buildings = [
+            { x: 25, z: -25, w: 28, d: 14, h: 10, color: '#991b1b', top: '#7f1d1d' },
+            { x: 12, z: -25, w: 6, d: 6, h: 20, color: '#b91c1c', top: '#14532d' },
+            { x: -26, z: -22, w: 24, d: 18, h: 9, color: '#0284c7', top: '#38bdf8' },
+            { x: 12, z: 42, w: 5, d: 5, h: 4, color: '#f8fafc', top: '#2563eb' },
+            { x: -25, z: 24, w: 14, d: 14, h: 16, color: '#cbd5e1', top: '#94a3b8' },
+            { x: -25, z: 52, w: 14, d: 14, h: 24, color: '#fde68a', top: '#f59e0b' },
+            { x: 26, z: 26, w: 14, d: 14, h: 18, color: '#e2e8f0', top: '#64748b' }
+        ];
+
+        function project(x, y, z, camX, camY, camZ) {
+            let dx = x - camX, dy = y - camY, dz = z - camZ;
+            let cos = Math.cos(-camAngle), sin = Math.sin(-camAngle);
+            let rx = dx * cos - dz * sin;
+            let rz = dx * sin + dz * cos;
+            let tilt = 0.42;
+            let ry = dy * Math.cos(tilt) - rz * Math.sin(tilt);
+            let fz = dy * Math.sin(tilt) + rz * Math.cos(tilt);
+            if (fz < 0.5) return null;
+            let fov = H * 0.85;
+            return { x: W / 2 + (rx / fz) * fov, y: H / 2 - (ry / fz) * fov, z: fz };
+        }
+
+        function drawBox(cx, cy, cz, w, h, d, angle, colorSide, colorTop, camX, camY, camZ) {
+            let hw = w / 2, hd = d / 2;
+            let cos = Math.cos(angle), sin = Math.sin(angle);
+            let pts3d = [
+                [-hw, 0, -hd], [hw, 0, -hd], [hw, 0, hd], [-hw, 0, hd],
+                [-hw, h, -hd], [hw, h, -hd], [hw, h, hd], [-hw, h, hd]
+            ];
+            let c = pts3d.map(p => project(p[0] * cos - p[2] * sin + cx, p[1] + cy, p[0] * sin + p[2] * cos + cz, camX, camY, camZ));
+            if (c.some(pt => pt === null)) return;
+
+            function poly(indices, col) {
+                ctx.beginPath();
+                ctx.moveTo(c[indices[0]].x, c[indices[0]].y);
+                for (let i = 1; i < indices.length; i++) ctx.lineTo(c[indices[i]].x, c[indices[i]].y);
+                ctx.closePath();
+                ctx.fillStyle = col;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            poly([0, 1, 5, 4], colorSide);
+            poly([1, 2, 6, 5], colorSide);
+            poly([2, 3, 7, 6], colorSide);
+            poly([3, 0, 4, 7], colorSide);
+            poly([4, 5, 6, 7], colorTop);
+        }
         function startGame() {
             const nick = document.getElementById('nick-input').value.trim();
             if (nick.length < 3) {
@@ -262,7 +171,7 @@
             document.getElementById('hud').style.display = 'block';
             isGameStarted = true;
             addChatMessage(`<span style="color:#facc15">[Сервер]: Добро пожаловать на RADMIR WEB RP, ${playerNick}!</span>`);
-            addChatMessage(`<span style="color:#a855f7">[Подсказка]: Рядом припаркован черный седан. Нажмите [F], чтобы сесть.</span>`);
+            addChatMessage(`<span style="color:#c084fc">[Подсказка]: Подойди к машине рядом и нажми [F], чтобы сесть за руль.</span>`);
         }
 
         function addChatMessage(html) {
@@ -271,17 +180,9 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        let isMouseDown = false;
-        window.addEventListener('mousedown', (e) => { if (e.button === 2 || e.button === 0) isMouseDown = true; });
-        window.addEventListener('mouseup', () => { isMouseDown = false; });
-        window.addEventListener('mousemove', (e) => {
-            if (isMouseDown && isGameStarted && !isChatOpen) camAngle -= e.movementX * 0.006;
-        });
-
         const keys = {};
         window.addEventListener('keydown', (e) => {
             if (!isGameStarted) return;
-
             if (e.code === 'KeyT' && !isChatOpen) {
                 e.preventDefault();
                 isChatOpen = true;
@@ -290,7 +191,6 @@
                 inp.focus();
                 return;
             }
-
             if (isChatOpen) {
                 if (e.code === 'Enter') {
                     const inp = document.getElementById('chat-input');
@@ -311,83 +211,121 @@
                 }
                 return;
             }
-
             if (e.code === 'KeyF') {
                 if (!currentCar) {
                     for (let c of cars) {
-                        if (playerGroup.position.distanceTo(c.mesh.position) < 4.5) {
+                        if (Math.hypot(player.x - c.x, player.z - c.z) < 4.5) {
                             currentCar = c;
-                            playerGroup.visible = false;
-                            addChatMessage(`<span style="color:#f472b6">* ${playerNick} открыл дверь и сел за руль</span>`);
+                            addChatMessage(`<span style="color:#f472b6">* ${playerNick} сел в ${c.name}</span>`);
                             break;
                         }
                     }
                 } else {
-                    playerGroup.visible = true;
-                    playerGroup.position.copy(currentCar.mesh.position).add(new THREE.Vector3(-2.5, 0, 0));
+                    player.x = currentCar.x - 2.5;
+                    player.z = currentCar.z;
+                    addChatMessage(`<span style="color:#f472b6">* ${playerNick} вышел из ${currentCar.name}</span>`);
                     currentCar = null;
-                    addChatMessage(`<span style="color:#f472b6">* ${playerNick} вышел из машины</span>`);
                 }
             }
             keys[e.code] = true;
         });
         window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
-        // 7. Игровой цикл
-        let velY = 0;
-        function animate() {
-            requestAnimationFrame(animate);
+        function loop() {
+            requestAnimationFrame(loop);
 
             if (isGameStarted && !isChatOpen) {
+                if (keys['KeyQ']) camAngle -= 0.03;
+                if (keys['KeyE']) camAngle += 0.03;
+
                 if (!currentCar) {
-                    const speed = keys['ShiftLeft'] ? 0.26 : 0.14;
-                    const forward = new THREE.Vector3(-Math.sin(camAngle), 0, -Math.cos(camAngle));
-                    const right = new THREE.Vector3(Math.cos(camAngle), 0, -Math.sin(camAngle));
-
-                    if (keys['KeyW']) playerGroup.position.addScaledVector(forward, speed);
-                    if (keys['KeyS']) playerGroup.position.addScaledVector(forward, -speed);
-                    if (keys['KeyA']) playerGroup.position.addScaledVector(right, -speed);
-                    if (keys['KeyD']) playerGroup.position.addScaledVector(right, speed);
-
-                    if (keys['Space'] && playerGroup.position.y <= 0.01) velY = 0.22;
-                    playerGroup.position.y += velY;
-                    if (playerGroup.position.y > 0) velY -= 0.012;
-                    else { playerGroup.position.y = 0; velY = 0; }
+                    let spd = keys['ShiftLeft'] ? 0.25 : 0.14;
+                    let moved = false, dx = 0, dz = 0;
+                    if (keys['KeyW']) { dx += Math.sin(camAngle); dz += Math.cos(camAngle); moved = true; }
+                    if (keys['KeyS']) { dx -= Math.sin(camAngle); dz -= Math.cos(camAngle); moved = true; }
+                    if (keys['KeyA']) { dx -= Math.cos(camAngle); dz += Math.sin(camAngle); moved = true; }
+                    if (keys['KeyD']) { dx += Math.cos(camAngle); dz -= Math.sin(camAngle); moved = true; }
+                    if (moved) {
+                        player.x += dx * spd;
+                        player.z += dz * spd;
+                        player.angle = Math.atan2(dx, dz);
+                        player.walkTime += spd * 1.6;
+                    } else {
+                        player.walkTime = 0;
+                    }
                 } else {
-                    if (keys['KeyW']) currentCar.speed = Math.min(currentCar.speed + 0.018, 0.75);
-                    else if (keys['KeyS']) currentCar.speed = Math.max(currentCar.speed - 0.018, -0.35);
+                    if (keys['KeyW']) currentCar.speed = Math.min(currentCar.speed + 0.02, 0.75);
+                    else if (keys['KeyS']) currentCar.speed = Math.max(currentCar.speed - 0.02, -0.35);
                     else currentCar.speed *= 0.96;
 
                     if (Math.abs(currentCar.speed) > 0.01) {
-                        const dir = currentCar.speed > 0 ? 1 : -1;
-                        if (keys['KeyA']) currentCar.mesh.rotation.y += 0.035 * dir;
-                        if (keys['KeyD']) currentCar.mesh.rotation.y -= 0.035 * dir;
+                        let dir = currentCar.speed > 0 ? 1 : -1;
+                        if (keys['KeyA']) currentCar.angle -= 0.04 * dir;
+                        if (keys['KeyD']) currentCar.angle += 0.04 * dir;
                     }
-                    currentCar.mesh.position.x -= Math.sin(currentCar.mesh.rotation.y) * currentCar.speed;
-                    currentCar.mesh.position.z -= Math.cos(currentCar.mesh.rotation.y) * currentCar.speed;
+                    currentCar.x += Math.sin(currentCar.angle) * currentCar.speed;
+                    currentCar.z += Math.cos(currentCar.angle) * currentCar.speed;
                 }
             }
 
-            const targetPos = currentCar ? currentCar.mesh.position : playerGroup.position;
-            const locBadge = document.getElementById('location-badge');
-            if (targetPos.x > 5 && targetPos.z < -5) locBadge.innerText = "Район: Арзамасский Кремль";
-            else if (targetPos.x < -10 && targetPos.z < -5) locBadge.innerText = "Район: Автосалон Люкс";
-            else if (targetPos.z > 35) locBadge.innerText = "Район: Пост ДПС (Южный выезд)";
-            else locBadge.innerText = "Район: Центральный проспект";
+            let target = currentCar || player;
+            let camX = target.x - Math.sin(camAngle) * 16;
+            let camY = 9;
+            let camZ = target.z - Math.cos(camAngle) * 16;
 
-            const camOffset = new THREE.Vector3(Math.sin(camAngle) * 12, 6, Math.cos(camAngle) * 12);
-            camera.position.lerp(targetPos.clone().add(camOffset), 0.12);
-            camera.lookAt(targetPos.x, targetPos.y + 1.5, targetPos.z);
+            const loc = document.getElementById('location-badge');
+            if (target.x > 5 && target.z < -5) loc.innerText = "Район: Арзамасский Кремль";
+            else if (target.x < -10 && target.z < -5) loc.innerText = "Район: Автосалон Люкс";
+            else if (target.z > 32) loc.innerText = "Район: Пост ДПС";
+            else loc.innerText = "Район: Центральный проспект";
 
-            renderer.render(scene, camera);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(0, 0, W, H * 0.45);
+            ctx.fillStyle = '#3f6212';
+            ctx.fillRect(0, H * 0.45, W, H * 0.55);
+
+            drawBox(0, 0, 0, 14, 0.05, 220, 0, '#1e293b', '#334155', camX, camY, camZ);
+            drawBox(0, 0, 0, 220, 0.05, 14, 0, '#1e293b', '#334155', camX, camY, camZ);
+            for (let z = -90; z <= 90; z += 14) {
+                if (Math.abs(z) > 10) drawBox(0, 0.06, z, 0.4, 0.02, 5, 0, '#facc15', '#facc15', camX, camY, camZ);
+            }
+
+            let renderList = [];
+            buildings.forEach(b => {
+                let p = project(b.x, b.h / 2, b.z, camX, camY, camZ);
+                if (p) renderList.push({ z: p.z, draw: () => drawBox(b.x, 0, b.z, b.w, b.h, b.d, 0, b.color, b.top, camX, camY, camZ) });
+            });
+
+            cars.forEach(c => {
+                let p = project(c.x, 1, c.z, camX, camY, camZ);
+                if (p) renderList.push({ z: p.z, draw: () => {
+                    drawBox(c.x, 0.2, c.z, 2.2, 0.7, 4.4, c.angle, c.color, c.roof, camX, camY, camZ);
+                    drawBox(c.x, 0.9, c.z, 1.8, 0.55, 2.2, c.angle, '#090d16', '#1e293b', camX, camY, camZ);
+                }});
+            });
+
+            if (!currentCar) {
+                let p = project(player.x, 1, player.z, camX, camY, camZ);
+                if (p) renderList.push({ z: p.z, draw: () => {
+                    let swing = Math.sin(player.walkTime) * 0.35;
+                    drawBox(player.x - 0.18, 0, player.z + swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
+                    drawBox(player.x + 0.18, 0, player.z - swing, 0.24, 0.8, 0.24, player.angle, '#1e293b', '#334155', camX, camY, camZ);
+                    drawBox(player.x, 0.8, player.z, 0.75, 0.9, 0.38, player.angle, '#1d4ed8', '#3b82f6', camX, camY, camZ);
+                    drawBox(player.x, 1.7, player.z, 0.5, 0.5, 0.5, player.angle, '#22c55e', '#4ade80', camX, camY, camZ);
+                    let headPos = project(player.x, 2.5, player.z, camX, camY, camZ);
+                    if (headPos) {
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 13px Segoe UI';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(playerNick, headPos.x, headPos.y);
+                    }
+                }});
+            }
+
+            renderList.sort((a, b) => b.z - a.z);
+            renderList.forEach(item => item.draw());
         }
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        loop();
     </script>
 </body>
 </html>
